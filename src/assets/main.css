@@ -1,0 +1,31 @@
+@import './base.css';
+@import 'tailwindcss';
+@import '@mdi/font/css/materialdesignicons.css';
+body {
+  overflow: auto;
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+.tippy-box[data-theme~='light-border'] {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+.tippy-box[data-theme~='light-border'] .tippy-content {
+  padding: 8px;
+}
+
+.tippy-box[data-theme~='light-border'] .tippy-arrow {
+  color: #fff;
+  border-color: #e0e0e0;
+}

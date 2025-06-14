@@ -1,0 +1,29 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+    // 👇 Alias config
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@composables/*": ["src/composables/*"],
+      "@commons/*": ["src/commons/*"],
+      "@stores/*": ["src/stores/*"],
+      "@utils/*": ["src/utils/*"],
+      "@assets/*": ["src/assets/*"],
+      "@admin/*": ["src/views/admin/*"],
+      "@auth/*": ["src/views/auth/*"],
+      "@users/*": ["src/views/users/*"],
+      "@staff/*": ["src/views/staff/*"]
+    },
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+}
