@@ -62,30 +62,6 @@ const notificationSettings = ref({
   weeklyDigest: true,
 })
 
-// const recentActivity = ref([
-//   {
-//     id: 1,
-//     type: 'task',
-//     action: 'Completed task',
-//     description: 'Customer feedback review',
-//     date: '2 hours ago',
-//   },
-//   {
-//     id: 2,
-//     type: 'support',
-//     action: 'Resolved ticket',
-//     description: '#1234 - Payment issue',
-//     date: '5 hours ago',
-//   },
-//   {
-//     id: 3,
-//     type: 'team',
-//     action: 'Joined meeting',
-//     description: 'Weekly team sync',
-//     date: 'Yesterday',
-//   },
-// ])
-
 const genders = [
   { value: 'MALE', text: 'MALE' },
   { value: 'FEMALE', text: 'FEMALE' },
@@ -163,10 +139,6 @@ const updateNotifications = () => {
           <va-icon name="notifications" />
           Notifications
         </va-tab>
-        <!-- <va-tab name="activity">
-          <va-icon name="history" />
-          Activity
-        </va-tab> -->
       </va-tabs>
     </div>
 
@@ -178,9 +150,6 @@ const updateNotifications = () => {
           <va-card-content>
             <form @submit.prevent="showConfirmChangeInfo">
               <div class="form-row">
-                <div class="form-group">
-                  <va-input v-model="userApi.user.id" label="Id" :disabled="true" />
-                </div>
                 <div class="form-group">
                   <va-input
                     v-model="userApi.user.email"
@@ -281,16 +250,6 @@ const updateNotifications = () => {
             </form>
           </va-card-content>
         </va-card>
-
-        <!-- <va-card class="mt-4">
-          <va-card-title>Two-Factor Authentication</va-card-title>
-          <va-card-content>
-            <p class="mb-4">
-              Add an extra layer of security to your account by enabling two-factor authentication.
-            </p>
-            <va-button preset="secondary"> Set Up 2FA </va-button>
-          </va-card-content>
-        </va-card> -->
       </div>
 
       <!-- Notifications Tab -->
@@ -348,38 +307,6 @@ const updateNotifications = () => {
           </va-card-content>
         </va-card>
       </div>
-
-      <!-- Activity Tab -->
-      <!-- <div v-if="activeTab === 'activity'" class="activity-section">
-        <va-card>
-          <va-card-title>Recent Activity</va-card-title>
-          <va-card-content>
-            <div class="activity-timeline">
-              <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
-                <div class="activity-icon">
-                  <va-icon
-                    :name="
-                      activity.type === 'task'
-                        ? 'assignment'
-                        : activity.type === 'support'
-                          ? 'support'
-                          : 'group'
-                    "
-                  />
-                </div>
-
-                <div class="activity-content">
-                  <div class="activity-header">
-                    <span class="activity-action">{{ activity.action }}</span>
-                    <span class="activity-date">{{ activity.date }}</span>
-                  </div>
-                  <p class="activity-description">{{ activity.description }}</p>
-                </div>
-              </div>
-            </div>
-          </va-card-content>
-        </va-card>
-      </div> -->
     </div>
   </div>
 </template>

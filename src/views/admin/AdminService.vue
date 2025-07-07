@@ -1,102 +1,149 @@
 <template>
-  <va-card>
-    <va-card-content>
-      <div class="justify-content-around my-3">
-        <div class="my-3"><h1>Quản lý dịch vụ</h1></div>
-        <div><va-button @click="onShowModalAdd">Thêm dịch vụ</va-button></div>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Nhập mã dịch vụ, tên, mô tả..."
-          clearable
-          class="filter-input"
-          aria-label="Tìm kiếm dịch vụ theo tên"
-        >
-          <template #prependInner>
-            <va-icon name="search" color="#718096" />
-          </template>
-        </va-input>
+  <va-inner-loading :loading="serviceStore.loading">
+    <va-card>
+      <va-card-content>
+        <div class="justify-content-around my-3">
+          <div class="my-3"><h1>Quản lý dịch vụ</h1></div>
+          <div>
+            <va-button @click="onShowModalAdd">Thêm dịch vụ</va-button>
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".xlsx"
+              class="hidden"
+              @change="onFileSelected"
+            />
 
-        <div class="filter-actions">
-          <va-button preset="secondary" @click="resetFilters" class="action-button">
-            Xóa bộ lọc
+            <!-- Nút chọn file -->
+            <va-button preset="secondary" class="ml-3" @click="triggerFileInput">
+              Import Excel
+            </va-button>
+
+            <!-- Hiển thị tên file đã chọn -->
+            <span v-if="selectedFile" class="ml-2">{{ selectedFile.name }}</span>
+
+            <!-- Nút Submit -->
+            <va-button
+              preset="primary"
+              class="ml-3"
+              :disabled="!selectedFile"
+              @click="submitImport"
+            >
+              Submit
+            </va-button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Nhập mã dịch vụ, tên, mô tả..."
+            clearable
+            class="filter-input"
+            aria-label="Tìm kiếm dịch vụ theo tên"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="#718096" />
+            </template>
+          </va-input>
+
+          <div class="filter-actions">
+            <va-button preset="secondary" @click="resetFilters" class="action-button">
+              Xóa bộ lọc
+            </va-button>
+            <va-button preset="primary" @click="handleSearch" class="action-button">
+              Tìm kiếm
+            </va-button>
+          </div>
+        </div>
+        <VaDataTable :items="serviceList" :columns="columns" hoverable>
+          <template #cell(id)="slotProps">
+            ser0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
+          </template>
+          <template #cell(actions)="slotProps">
+            <VaButton
+              preset="plain"
+              icon="visibility"
+              @click="onShowDetailModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="edit"
+              class="ml-3"
+              @click="onShowEditModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="delete"
+              class="ml-3"
+              @click="onShowDeleteModal(slotProps.rowData)"
+            />
+          </template>
+        </VaDataTable>
+        <div class="my-3 d-flex pagination-container">
+          <VaPagination
+            v-model="currentPage"
+            :total="total"
+            :pages="totalPages"
+            :rows-per-page="pageSize"
+            :rows-per-page-options="[5, 10, 20]"
+            :visible-pages="5"
+            class="mt-6"
+            @update:modelValue="onPageChange"
+          />
+        </div>
+
+        <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
+          <AddService
+            :service-data="serviceData"
+            @close-modal="onCloseModalAdd"
+            @save-service="onAddService"
+          />
+        </va-modal>
+        <va-modal v-model="isShowEditModal" hide-default-actions @close="onCloseModalEdit">
+          <EditService
+            :service-data="selectedService!"
+            @close-modal="onCloseModalEdit"
+            @edit-service="onEditService"
+          />
+        </va-modal>
+        <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
+          <DetailService :service-data="selectedService!" @close-modal="onCloseModalDetail" />
+        </va-modal>
+        <va-modal v-model="isShowDeleteModal" hide-default-actions @close="onCloseModalDelete">
+          <DeleteConfirm
+            title="Cảnh báo xóa dịch vụ"
+            message="Bạn có chắc chắn muốn xóa dịch vụ không?"
+            @confirm="onDeleteService"
+            @close-confirm="onCloseModalDelete"
+          />
+        </va-modal>
+        <div class="d-flex">
+          <VaAlert class="!mt-6" color="info" outline>
+            Number of filtered items:
+            <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
+          </VaAlert>
+          <VaAlert class="!mt-6" color="info" outline>
+            Total items:
+            <VaChip>{{ total }}</VaChip>
+          </VaAlert>
+        </div>
+        <div class="d-flex mt-3 excel-service">
+          <va-button preset="secondary" class="ml-3">
+            <a
+              href="/excel/data-services-frame.xlsx"
+              download="template-import-services.xlsx"
+              style="text-decoration: none; color: inherit"
+            >
+              Download Excel Template
+            </a>
           </va-button>
-          <va-button preset="primary" @click="handleSearch" class="action-button">
-            Tìm kiếm
+          <va-button preset="secondary" class="ml-3" @click="exportServicesToExcel">
+            Export Excel
           </va-button>
         </div>
-      </div>
-      <VaDataTable :items="serviceList" :columns="columns" hoverable>
-        <template #cell(actions)="slotProps">
-          <VaButton
-            preset="plain"
-            icon="visibility"
-            @click="onShowDetailModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="edit"
-            class="ml-3"
-            @click="onShowEditModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="delete"
-            class="ml-3"
-            @click="onShowDeleteModal(slotProps.rowData)"
-          />
-        </template>
-      </VaDataTable>
-      <div class="my-3 d-flex pagination-container">
-        <VaPagination
-          v-model="currentPage"
-          :total="total"
-          :pages="totalPages"
-          :rows-per-page="pageSize"
-          :rows-per-page-options="[5, 10, 20]"
-          :visible-pages="5"
-          class="mt-6"
-          @update:modelValue="onPageChange"
-        />
-      </div>
-      <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
-        <AddService
-          :service-data="serviceData"
-          @close-modal="onCloseModalAdd"
-          @save-service="onAddService"
-        />
-      </va-modal>
-      <va-modal v-model="isShowEditModal" hide-default-actions @close="onCloseModalEdit">
-        <EditService
-          :service-data="selectedService!"
-          @close-modal="onCloseModalEdit"
-          @edit-service="onEditService"
-        />
-      </va-modal>
-      <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
-        <DetailService :service-data="selectedService!" @close-modal="onCloseModalDetail" />
-      </va-modal>
-      <va-modal v-model="isShowDeleteModal" hide-default-actions @close="onCloseModalDelete">
-        <DeleteConfirm
-          title="Cảnh báo xóa dịch vụ"
-          message="Bạn có chắc chắn muốn xóa dịch vụ không?"
-          @confirm="onDeleteService"
-          @close-confirm="onCloseModalDelete"
-        />
-      </va-modal>
-      <div class="d-flex">
-        <VaAlert class="!mt-6" color="info" outline>
-          Number of filtered items:
-          <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
-        </VaAlert>
-        <VaAlert class="!mt-6" color="info" outline>
-          Total items:
-          <VaChip>{{ total }}</VaChip>
-        </VaAlert>
-      </div>
-    </va-card-content>
-  </va-card>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
 </template>
 
 <script setup lang="ts">
@@ -112,7 +159,7 @@ import { toast } from 'vue3-toastify'
 const serviceStore = useServiceStore()
 const serviceList = ref(serviceStore.services || [])
 const columns = ref([
-  { key: 'id', name: 'id', label: 'ID', field: 'id', sortable: true },
+  { key: 'id', name: 'id', label: 'STT', field: 'id', sortable: true },
   { key: 'name', name: 'name', label: 'Tên dịch vụ', field: 'name' },
   { key: 'description', name: 'description', label: 'Mô tả', field: 'description' },
   { key: 'price', name: 'price', label: 'Giá', field: 'price', sortable: true },
@@ -261,6 +308,48 @@ async function onDeleteService() {
   }
   selectedService.value = null
 }
+/**
+ * EXPORT EXCEL
+ */
+async function exportServicesToExcel() {
+  try {
+    await serviceStore.exportExcel()
+    toast.success('Xuất Excel thành công!')
+  } catch (error) {
+    toast.error(error.message)
+  }
+}
+/**
+ * IMPORT EXCEL
+ */
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+// Lưu file khi người dùng chọn
+const onFileSelected = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  selectedFile.value = target.files?.[0] || null
+}
+
+const submitImport = async () => {
+  if (!selectedFile.value) return
+
+  try {
+    const res = await serviceStore.importExcel(selectedFile.value)
+    if (res.success) {
+      toast.success('Import thành công')
+      selectedFile.value = null
+      await fetchInitData()
+    } else {
+      toast.error('Import thất bại!')
+    }
+  } catch (err) {
+    toast.error('Lỗi khi import:', err)
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -270,5 +359,8 @@ async function onDeleteService() {
 }
 :deep(.va-data-table__table-thead) {
   background-color: #ecf0f1 !important; /* đổi màu header */
+}
+.excel-service {
+  justify-content: space-between;
 }
 </style>

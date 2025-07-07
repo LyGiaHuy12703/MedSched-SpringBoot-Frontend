@@ -1,105 +1,111 @@
 <template>
-  <va-card>
-    <va-card-content>
-      <div class="justify-content-around my-3">
-        <div class="my-3"><h1>Quản lý bộ phận (Khoa)</h1></div>
-        <div><va-button @click="onShowModalAdd">Thêm bộ phận</va-button></div>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Nhập mã bộ phận, tên, mô tả..."
-          clearable
-          class="filter-input"
-          aria-label="Tìm kiếm bác sĩ theo tên"
-        >
-          <template #prependInner>
-            <va-icon name="search" color="#718096" />
-          </template>
-        </va-input>
-
-        <div class="filter-actions">
-          <va-button preset="secondary" @click="resetFilters" class="action-button">
-            Xóa bộ lọc
-          </va-button>
-          <va-button preset="primary" @click="handleSearch" class="action-button">
-            Tìm kiếm
-          </va-button>
+  <va-inner-loading :loading="departmentStore.loading">
+    <va-card>
+      <va-card-content>
+        <div class="justify-content-around my-3">
+          <div class="my-3"><h1>Quản lý bộ phận (Khoa)</h1></div>
+          <div><va-button @click="onShowModalAdd">Thêm bộ phận</va-button></div>
         </div>
-      </div>
-      <VaDataTable :items="departmentList" :columns="columns" hoverable>
-        <template #cell(actions)="slotProps">
-          <VaButton
-            preset="plain"
-            icon="visibility"
-            @click="onShowDetailModal(slotProps.rowData)"
+        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Nhập mã bộ phận, tên, mô tả..."
+            clearable
+            class="filter-input"
+            aria-label="Tìm kiếm bác sĩ theo tên"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="#718096" />
+            </template>
+          </va-input>
+
+          <div class="filter-actions">
+            <va-button preset="secondary" @click="resetFilters" class="action-button">
+              Xóa bộ lọc
+            </va-button>
+            <va-button preset="primary" @click="handleSearch" class="action-button">
+              Tìm kiếm
+            </va-button>
+          </div>
+        </div>
+        <VaDataTable :items="departmentList" :columns="columns" hoverable>
+          <template #cell(id)="slotProps">
+            dept0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
+          </template>
+
+          <template #cell(actions)="slotProps">
+            <VaButton
+              preset="plain"
+              icon="visibility"
+              @click="onShowDetailModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="edit"
+              class="ml-3"
+              @click="onShowEditModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="delete"
+              class="ml-3"
+              @click="onShowDeleteModal(slotProps.rowData)"
+            />
+          </template>
+        </VaDataTable>
+        <div class="my-3 d-flex pagination-container">
+          <VaPagination
+            v-model="currentPage"
+            :total="total"
+            :pages="totalPages"
+            :rows-per-page="pageSize"
+            :rows-per-page-options="[5, 10, 20]"
+            :visible-pages="5"
+            class="mt-6"
+            @update:modelValue="onPageChange"
           />
-          <VaButton
-            preset="plain"
-            icon="edit"
-            class="ml-3"
-            @click="onShowEditModal(slotProps.rowData)"
+        </div>
+        <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
+          <AddDepartment
+            :department-data="departmentData"
+            @close-modal="onCloseModalAdd"
+            @save-department="onAddDepartment"
           />
-          <VaButton
-            preset="plain"
-            icon="delete"
-            class="ml-3"
-            @click="onShowDeleteModal(slotProps.rowData)"
+        </va-modal>
+        <va-modal v-model="isShowEditModal" hide-default-actions @close="onCloseModalEdit">
+          <EditDepartment
+            :department-data="selectedDepartment!"
+            @close-modal="onCloseModalEdit"
+            @edit-department="onEditDepartment"
           />
-        </template>
-      </VaDataTable>
-      <div class="my-3 d-flex pagination-container">
-        <VaPagination
-          v-model="currentPage"
-          :total="total"
-          :pages="totalPages"
-          :rows-per-page="pageSize"
-          :rows-per-page-options="[5, 10, 20]"
-          :visible-pages="5"
-          class="mt-6"
-          @update:modelValue="onPageChange"
-        />
-      </div>
-      <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
-        <AddDepartment
-          :department-data="departmentData"
-          @close-modal="onCloseModalAdd"
-          @save-department="onAddDepartment"
-        />
-      </va-modal>
-      <va-modal v-model="isShowEditModal" hide-default-actions @close="onCloseModalEdit">
-        <EditDepartment
-          :department-data="selectedDepartment!"
-          @close-modal="onCloseModalEdit"
-          @edit-department="onEditDepartment"
-        />
-      </va-modal>
-      <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
-        <DetailDepartment
-          :department-data="selectedDepartment!"
-          @close-modal="onCloseModalDetail"
-        />
-      </va-modal>
-      <va-modal v-model="isShowDeleteModal" hide-default-actions @close="onCloseModalDelete">
-        <DeleteConfirm
-          title="Cảnh báo xóa bộ phận"
-          message="Bạn có chắc chắn muốn xóa bộ phận không?"
-          @confirm="onDeleteDepartment"
-          @close-confirm="onCloseModalDelete"
-        />
-      </va-modal>
-      <div class="d-flex">
-        <VaAlert class="!mt-6" color="info" outline>
-          Number of filtered items:
-          <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
-        </VaAlert>
-        <VaAlert class="!mt-6" color="info" outline>
-          Total items:
-          <VaChip>{{ total }}</VaChip>
-        </VaAlert>
-      </div>
-    </va-card-content>
-  </va-card>
+        </va-modal>
+        <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
+          <DetailDepartment
+            :department-data="selectedDepartment!"
+            @close-modal="onCloseModalDetail"
+          />
+        </va-modal>
+        <va-modal v-model="isShowDeleteModal" hide-default-actions @close="onCloseModalDelete">
+          <DeleteConfirm
+            title="Cảnh báo xóa bộ phận"
+            message="Bạn có chắc chắn muốn xóa bộ phận không?"
+            @confirm="onDeleteDepartment"
+            @close-confirm="onCloseModalDelete"
+          />
+        </va-modal>
+        <div class="d-flex">
+          <VaAlert class="!mt-6" color="info" outline>
+            Number of filtered items:
+            <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
+          </VaAlert>
+          <VaAlert class="!mt-6" color="info" outline>
+            Total items:
+            <VaChip>{{ total }}</VaChip>
+          </VaAlert>
+        </div>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
 </template>
 <script setup lang="ts">
 import DeleteConfirm from '@/components/DeleteConfirm.vue'
@@ -114,7 +120,7 @@ import { toast } from 'vue3-toastify'
 const departmentStore = useDepartmentStore()
 const departmentList = ref(departmentStore.departments || [])
 const columns = ref([
-  { key: 'id', name: 'id', label: 'ID', field: 'id', sortable: true },
+  { key: 'id', name: 'id', label: 'STT', field: 'id', sortable: true },
   { key: 'name', name: 'name', label: 'Tên bộ phận', field: 'name' },
   { key: 'description', name: 'description', label: 'Mô tả', field: 'description' },
   { key: 'actions', name: 'actions', label: 'Hành động', field: 'actions', sortable: false },

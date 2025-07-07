@@ -1,5 +1,5 @@
 <template>
-  <div class="doctor-shift-page">
+  <va-inner-loading :loading="scheduleStore.loading" class="doctor-shift-page">
     <!-- Filters Card -->
     <va-card class="mb-4">
       <va-card-title>Phân Công Lịch Trực</va-card-title>
@@ -46,15 +46,21 @@
               @update:modelValue="onDepartmentChangeInForm"
             />
             <va-select
-              v-model="formState.staffIds"
+              v-model="formState.staffId"
               label="Chọn nhân viên"
               :options="staffOptionsForForm"
               text-by="text"
               value-by="value"
               class="mb-3"
-              multiple
               required
               :disabled="!formState.departmentId"
+            />
+            <va-input
+              v-model="formState.dayWork"
+              type="date"
+              label="Ngày trực"
+              class="mb-3"
+              required
             />
             <va-select
               v-model="formState.shiftValue"
@@ -64,8 +70,7 @@
               value-by="value"
               class="mb-3"
               required
-            >
-            </va-select>
+            />
             <div class="d-flex justify-space-between mt-3">
               <va-button type="submit" preset="primary">{{
                 formState.id ? 'Cập nhật' : 'Phân công'
@@ -73,7 +78,6 @@
               <va-button v-if="formState.id" @click="resetForm" preset="secondary">Hủy</va-button>
             </div>
           </form>
-          <!-- For Debugging: <pre>{{ formState }}</pre> -->
         </va-card-content>
       </va-card>
 
@@ -86,35 +90,25 @@
               <div class="schedule-cell">Ca trực</div>
               <div class="schedule-cell">Thời gian</div>
               <div class="schedule-cell">Nhân viên trực</div>
-              <div class="schedule-cell">Bộ phận</div>
+              <div class="schedule-cell">Trạng thái</div>
               <div class="schedule-cell">Thao tác</div>
             </div>
-            <!-- REFACTORED: Use the new computed property -->
-            <div v-for="item in filteredSchedule" :key="item.id" class="schedule-row">
-              {{ console.log(item) }}
+            <div v-for="item in paginatedSchedule" :key="item.id" class="schedule-row">
               <div class="schedule-cell">
                 <va-badge :color="item.shiftBadgeColor" :text="item.shiftLabel" />
               </div>
               <div class="schedule-cell">{{ item.startTime }} - {{ item.endTime }}</div>
               <div class="schedule-cell">
-                <div class="assigned-doctor" v-if="item.staffs.length > 0">
-                  <img
-                    :src="item.staffs[0].avatar"
-                    :alt="item.staffs[0].name"
-                    class="doctor-avatar"
-                  />
+                <div class="assigned-doctor">
+                  <img :src="item.staff.avatar" :alt="item.staff.name" class="doctor-avatar" />
                   <div class="doctor-info">
-                    <div class="doctor-name">{{ item.staffNames }}</div>
+                    <div class="doctor-name">{{ item.staff.name }}</div>
                     <div class="doctor-department">{{ item.departmentName }}</div>
                   </div>
                 </div>
               </div>
               <div class="schedule-cell">
-                <span
-                  class="department-color"
-                  :style="{ backgroundColor: item.departmentColor }"
-                ></span>
-                {{ item.departmentName }}
+                {{ getChangeStatusName(item.status) }}
               </div>
               <div class="schedule-cell actions">
                 <va-button
@@ -132,9 +126,21 @@
                 />
               </div>
             </div>
-            <div v-if="filteredSchedule.length === 0" class="schedule-row empty">
+            <div v-if="paginatedSchedule.length === 0" class="schedule-row empty">
               <div class="schedule-cell" :colspan="5">Không có ca trực nào phù hợp với bộ lọc.</div>
             </div>
+          </div>
+          <!-- Pagination Component -->
+          <div class="pagination-container" v-if="filteredSchedule.length > itemsPerPage">
+            <va-pagination
+              v-model="currentPage"
+              :total="filteredSchedule.length"
+              :page-size="itemsPerPage"
+              :show-total="true"
+              :visible-pages="5"
+              class="mt-5"
+              @update:modelValue="handlePageChange"
+            />
           </div>
         </va-card-content>
       </va-card>
@@ -149,11 +155,11 @@
         @confirm="confirmDelete"
       />
     </va-modal>
-  </div>
+  </va-inner-loading>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, reactive } from 'vue'
+import { computed, onMounted, ref, reactive, watch } from 'vue'
 import type { DoctorShiftCreateRequest } from '@/interfaces/doctorShift.interfaces'
 import { useStaffStore } from '@/stores/staff.store'
 import { useDepartmentStore } from '@/stores/department.store'
@@ -163,9 +169,9 @@ import DeleteConfirm from '@/components/DeleteConfirm.vue'
 
 // --- Constants ---
 const shiftTimes = [
-  { value: 'morning', start: '07:00', end: '13:00', label: 'Ca sáng', color: 'primary' },
-  { value: 'afternoon', start: '13:00', end: '19:00', label: 'Ca chiều', color: 'warning' },
-  { value: 'night', start: '19:00', end: '07:00', label: 'Ca đêm', color: 'info' },
+  { value: 'morning', start: '06:00:00', end: '14:00:00', label: 'Ca sáng', color: 'primary' },
+  { value: 'afternoon', start: '14:00:00', end: '22:00:00', label: 'Ca chiều', color: 'warning' },
+  { value: 'night', start: '22:00:00', end: '06:00:00', label: 'Ca đêm', color: 'info' },
 ]
 
 // --- Store Initialization ---
@@ -174,26 +180,20 @@ const departmentStore = useDepartmentStore()
 const scheduleStore = useScheduleStore()
 
 // --- Component State ---
-// Filters
 const filterDate = ref(new Date().toISOString().slice(0, 10))
 const filterDepartment = ref('Tất cả')
 const searchQuery = ref('')
-
-// REFACTORED: Centralized form state
-const initialFormState = {
+const currentPage = ref(1)
+const itemsPerPage = ref(3)
+const formState = reactive({
   id: undefined as string | undefined,
   departmentId: '',
-  staffIds: [] as string[],
+  staffId: '' as string,
   shiftValue: 'morning' as 'morning' | 'afternoon' | 'night',
-}
-const formState = reactive({ ...initialFormState })
-
-// Modal State
+  dayWork: new Date().toISOString().slice(0, 10),
+})
 const isDeleteModalVisible = ref(false)
 const scheduleIdToDelete = ref<string | null>(null)
-
-// UI State
-const departmentColors = ref<Record<string, string>>({})
 
 // --- Computed Properties ---
 const formattedDate = computed(() =>
@@ -211,60 +211,77 @@ const departmentOptions = computed(() =>
 const staffOptionsForForm = computed(() => {
   if (!formState.departmentId) return []
   return staffStore.staffs
-    .filter((staff) => staff.departments.id === formState.departmentId)
+    .filter((staff) => staff.departments?.id === formState.departmentId)
     .map((staff) => ({ text: staff.user.name, value: staff.id }))
 })
 
-// REFACTORED: A single, powerful computed property for the schedule list
 const filteredSchedule = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
-
-  return scheduleStore.schedules
-    .filter((s) => s.dayWork === filterDate.value) // 1. Filter by date
-    .map((schedule) => {
-      // 2. Map to a richer display object
-      const department = departmentStore.departments.find((d) => d.id === schedule.departments)
-      const staffDetails = schedule.staffs
-        .map((staff) => staffStore.staffs.find((s) => s.id === staff.id))
-        .filter(Boolean)
-        .map((fullStaff) => ({
-          id: fullStaff!.id,
-          name: fullStaff!.user.name,
-          avatar:
-            fullStaff!.user.avatar ||
-            'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg',
-        }))
-
+  const result = scheduleStore.schedules
+    .filter((s) => s.dayWork === filterDate.value)
+    .flatMap((schedule) => {
+      const departmentId = schedule.departmentDTO?.id
+      const department = departmentStore.departments.find((d) => d.id === departmentId)
       const shiftInfo = shiftTimes.find((st) => st.start === schedule.startTime) || shiftTimes[0]
 
-      return {
-        id: schedule.id,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        departmentId: department?.id || '',
-        departmentName: department?.name || 'Không xác định',
-        departmentColor: departmentColors.value[department?.id || ''] || '#ccc',
-        staffs: staffDetails,
-        staffIds: staffDetails.map((s) => s.id),
-        staffNames: staffDetails.map((s) => s.name).join(', '),
-        shiftLabel: shiftInfo.label,
-        shiftBadgeColor: shiftInfo.color,
-      }
+      if (!Array.isArray(schedule.staffs) || schedule.staffs.length === 0) return []
+
+      return schedule.staffs.map((staffInSchedule) => {
+        const staffId = staffInSchedule.id || staffInSchedule
+        const staff = staffStore.staffs.find((s) => s.id === staffId) || {
+          id: staffId,
+          user: { name: 'Nhân viên không xác định', avatar: '/defaultAvatar.png' },
+        }
+
+        return {
+          id: schedule.id,
+          startTime: schedule.startTime || '00:00:00',
+          endTime: schedule.endTime || '00:00:00',
+          departmentId: department?.id || '',
+          departmentName: department?.name || 'Không xác định',
+          departmentColor: department?.id ? `#${Math.random().toString(16).slice(2, 8)}` : '#ccc',
+          staff: {
+            id: staff.id,
+            name: staff.user?.name || 'Không xác định',
+            avatar: staff.user?.avatar || '/defaultAvatar.png',
+          },
+          status: schedule.status || 'active',
+          shiftLabel: shiftInfo.label,
+          shiftBadgeColor: shiftInfo.color,
+        }
+      })
     })
     .filter((item) => {
-      // 3. Filter by department and search query
       const departmentMatch =
         filterDepartment.value === 'Tất cả' || item.departmentName === filterDepartment.value
       const searchMatch =
         !query ||
-        item.staffNames.toLowerCase().includes(query) ||
+        item.staff.name.toLowerCase().includes(query) ||
         item.departmentName.toLowerCase().includes(query)
       return departmentMatch && searchMatch
     })
-    .sort((a, b) => a.startTime.localeCompare(b.startTime)) // 4. Sort by time
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+
+  return result
 })
 
-// --- Methods & Event Handlers ---
+const paginatedSchedule = computed(() => {
+  const start = currentPage.value - 1
+  const end = start + itemsPerPage.value
+  return filteredSchedule.value.slice(start, end)
+})
+
+const getChangeStatusName = (status: string) => {
+  const statusMap: Record<string, string> = {
+    PENDING: 'Chờ xác nhận',
+    APPROVE: 'Đã xác nhận',
+    IN_PROGRESS: 'Đang trong ca trực',
+    COMPLETED: 'Đã hoàn thành',
+  }
+  return statusMap[status] || 'Đã hủy'
+}
+
+// --- Methods ---
 const fetchAllData = async () => {
   try {
     await Promise.all([
@@ -272,50 +289,38 @@ const fetchAllData = async () => {
       staffStore.fetchAllStaffs(0, 1000),
       scheduleStore.fetchAllSchedule(0, 1000),
     ])
-    generateDepartmentColors()
+    currentPage.value = 1
   } catch (error) {
-    toast.error('Không thể tải dữ liệu cần thiết.')
+    toast.error('Không thể tải dữ liệu.')
   }
 }
 
-const generateDepartmentColors = () => {
-  const colors = [
-    '#e74c3c',
-    '#3498db',
-    '#2ecc71',
-    '#f1c40f',
-    '#9b59b6',
-    '#e67e22',
-    '#1abc9c',
-    '#34495e',
-  ]
-  const newColors: Record<string, string> = {}
-  departmentStore.departments.forEach((dep, idx) => {
-    newColors[dep.id] = colors[idx % colors.length]
-  })
-  departmentColors.value = newColors
-}
-
 const resetForm = () => {
-  Object.assign(formState, initialFormState)
+  Object.assign(formState, {
+    id: undefined,
+    departmentId: '',
+    staffId: '',
+    shiftValue: 'morning',
+    dayWork: new Date().toISOString().slice(0, 10),
+  })
 }
 
 const onDepartmentChangeInForm = () => {
-  formState.staffIds = []
+  formState.staffId = ''
 }
 
 const handleSubmit = async () => {
   const selectedShift = shiftTimes.find((s) => s.value === formState.shiftValue)
-  if (!formState.departmentId || formState.staffIds.length === 0 || !selectedShift) {
-    toast.error('Vui lòng điền đầy đủ thông tin bắt buộc.')
+  if (!formState.departmentId || !formState.staffId || !selectedShift || !formState.dayWork) {
+    toast.error('Vui lòng điền đầy đủ thông tin.')
     return
   }
 
   const payload: DoctorShiftCreateRequest = {
     startTime: selectedShift.start,
     endTime: selectedShift.end,
-    dayWork: filterDate.value,
-    staffIds: formState.staffIds,
+    dayWork: formState.dayWork,
+    staffId: formState.staffId,
   }
 
   try {
@@ -329,15 +334,17 @@ const handleSubmit = async () => {
     await fetchAllData()
     resetForm()
   } catch (error: any) {
-    toast.error(` ${error.message || 'Lỗi không xác định'}`)
+    toast.error(error.message || 'Lỗi không xác định')
   }
 }
 
-const handleEdit = (scheduleItem: (typeof filteredSchedule.value)[0]) => {
+const handleEdit = (scheduleItem: any) => {
   formState.id = scheduleItem.id
   formState.departmentId = scheduleItem.departmentId
-  formState.staffIds = scheduleItem.staffIds
-  formState.shiftValue = scheduleItem.shiftValue
+  formState.staffId = scheduleItem.staff.id
+  formState.dayWork = filterDate.value
+  const shift = shiftTimes.find((s) => s.start === scheduleItem.startTime)
+  formState.shiftValue = (shift ? shift.value : 'morning') as 'morning' | 'afternoon' | 'night'
 }
 
 const showDeleteConfirm = (id: string) => {
@@ -364,13 +371,10 @@ const confirmDelete = async () => {
 }
 
 // --- Lifecycle Hooks ---
-onMounted(() => {
-  fetchAllData()
-})
+onMounted(fetchAllData)
 </script>
 
 <style lang="scss" scoped>
-/* CSS của bạn không thay đổi */
 .doctor-shift-page {
   display: flex;
   flex-direction: column;
@@ -395,31 +399,6 @@ onMounted(() => {
 }
 .search-input {
   max-width: 300px;
-}
-.department-legend-wrapper .legend-title {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-}
-.department-legend-wrapper .department-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.department-legend-wrapper .legend-item {
-  display: flex;
-  align-items: center;
-}
-.department-legend-wrapper .legend-color {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  border: 1px solid #ddd;
-}
-.department-legend-wrapper .legend-label {
-  font-size: 0.875rem;
 }
 .schedule-container {
   display: grid;
@@ -491,11 +470,8 @@ onMounted(() => {
   font-size: 0.8rem;
   color: var(--va-text-secondary);
 }
-.department-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  flex-shrink: 0;
+.pagination-container {
+  display: flex;
+  justify-content: center;
 }
 </style>

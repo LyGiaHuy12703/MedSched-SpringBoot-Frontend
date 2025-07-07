@@ -50,9 +50,11 @@
 
       <!-- Google Login Button -->
       <div class="mb-3">
-        <va-button preset="danger" color="danger" block :loading="loading" :disabled="loading">
-          Đăng nhập với google
-        </va-button>
+        <a href="http://localhost:8080/api/oauth2/authorization/google"
+          ><va-button preset="danger" color="danger" block :loading="loading" :disabled="loading">
+            Đăng nhập với google
+          </va-button></a
+        >
       </div>
     </va-form>
   </div>

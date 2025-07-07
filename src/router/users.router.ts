@@ -8,7 +8,7 @@ const userRoutes: RouteRecordRaw[] = [
     meta: {
       layout: 'Client',
       requiredAuth: false,
-      // allowedRoles: ['PATIENT', null],
+      allowedRoles: ['PATIENT', null],
     },
   },
   {
@@ -27,7 +27,7 @@ const userRoutes: RouteRecordRaw[] = [
     meta: {
       layout: 'Client',
       requiredAuth: false,
-      // allowedRoles: ['PATIENT', null],
+      allowedRoles: ['PATIENT', null],
     },
   },
   {
@@ -36,7 +36,29 @@ const userRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/users/UserBooking.vue'),
     meta: {
       layout: 'Client',
-
+      allowedRoles: ['PATIENT', null],
+    },
+  },
+  {
+    path: '/patient-feedback',
+    name: 'PatientFeedback',
+    component: () => import('@/views/users/PatientFeedback.vue'),
+    meta: {
+      layout: 'Client',
+      allowedRoles: ['PATIENT', null],
+    },
+  },
+  {
+    path: '/payment-result',
+    name: 'PaymentResult',
+    component: () => import('@/views/PaymentResult.vue'),
+    props: (route) => ({
+      status: route.query.status,
+      orderId: route.query.orderId,
+      message: route.query.message,
+    }),
+    meta: {
+      layout: 'Client',
       allowedRoles: ['PATIENT', null],
     },
   },

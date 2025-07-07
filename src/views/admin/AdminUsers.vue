@@ -1,193 +1,202 @@
 <template>
-  <va-card>
-    <va-card-content>
-      <div class="justify-content-around my-3">
-        <di class="my-3"><h1>Quản lý tài khoản</h1></di>
-      </div>
-      <div class="role-tabs">
-        <va-tabs v-model="activeTab" grow>
-          <va-tab name="users" class="tab">
-            <va-icon name="person" class="tab-icon" />
-            Users
-          </va-tab>
-          <va-tab name="doctor" class="tab">
-            <VaIcon name="local_hospital" class="tab-icon" />
-            Staff
-          </va-tab>
-        </va-tabs>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Tìm kiếm theo tên, email, vai trò..."
-          clearable
-          class="filter-input"
-          aria-label="Tìm kiếm bác sĩ theo tên"
-        >
-          <template #prependInner>
-            <va-icon name="search" color="#718096" />
-          </template>
-        </va-input>
-
-        <div class="filter-actions">
-          <va-button preset="secondary" @click="resetFilters" class="action-button">
-            Xóa bộ lọc
-          </va-button>
-          <va-button preset="primary" @click="handleSearch" class="action-button">
-            Tìm kiếm
-          </va-button>
+  <va-inner-loading :loading="staffStore.loading || userStore.loading">
+    <va-card>
+      <va-card-content>
+        <div class="justify-content-around my-3">
+          <di class="my-3"><h1>Quản lý tài khoản</h1></di>
         </div>
-      </div>
+        <div class="role-tabs">
+          <va-tabs v-model="activeTab" grow>
+            <va-tab name="users" class="tab">
+              <va-icon name="person" class="tab-icon" />
+              Users
+            </va-tab>
+            <va-tab name="doctor" class="tab">
+              <VaIcon name="local_hospital" class="tab-icon" />
+              Staff
+            </va-tab>
+          </va-tabs>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Tìm kiếm theo tên, email, vai trò..."
+            clearable
+            class="filter-input"
+            aria-label="Tìm kiếm bác sĩ theo tên"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="#718096" />
+            </template>
+          </va-input>
 
-      <div v-if="activeTab === 'users'" class="mt-3">
-        <va-data-table
-          :items="users"
-          :columns="columns"
-          hoverable
-          :filter="filter"
-          :filter-method="customFilteringFn"
-          @filtered="filteredCount = $event.items.length"
-        >
-          <template #cell(active)="slotProps">
-            <div class="active">
-              <va-switch
-                v-model="slotProps.rowData.active"
-                size="small"
-                color="success"
-                @change="onSwitchChange(slotProps.rowData)"
-              />
-            </div>
-          </template>
-          <template #cell(avatar)="slotProps">
-            <div class="avatar">
-              <va-avatar :src="slotProps.rowData.avatar || '/defaultAvatar.png'" size="small" />
-            </div>
-          </template>
-          <template #cell(actions)="slotProps">
-            <div class="actions">
-              <VaButton
-                preset="plain"
-                icon="visibility"
-                @click="onShowDetailModal(slotProps.rowData)"
-              />
-            </div>
-          </template>
-        </va-data-table>
-        <div class="my-3 d-flex pagination-container">
-          <VaPagination
-            v-model="currentPage"
-            :total="total"
-            :pages="totalPages"
-            :rows-per-page="pageSize"
-            :rows-per-page-options="[5, 10, 20]"
-            :visible-pages="5"
-            class="mt-6"
-            @update:modelValue="onPageChange"
-          />
+          <div class="filter-actions">
+            <va-button preset="secondary" @click="resetFilters" class="action-button">
+              Xóa bộ lọc
+            </va-button>
+            <va-button preset="primary" @click="handleSearch" class="action-button">
+              Tìm kiếm
+            </va-button>
+          </div>
         </div>
 
-        <div class="d-flex">
-          <VaAlert class="!mt-6" color="info" outline>
-            Number of filtered items:
-            <VaChip>{{ filteredCount }}</VaChip>
-          </VaAlert>
-          <VaAlert class="!mt-6" color="info" outline>
-            Total items:
-            <VaChip>{{ total }}</VaChip>
-          </VaAlert>
-        </div>
-      </div>
-      <div v-else>
-        <div class="mb-3">
-          <va-button @click="onShowModalAdd"> Thêm nhân viên</va-button>
-        </div>
-        <va-data-table
-          :items="staffs"
-          :columns="columnsStaffTable"
-          hoverable
-          :filter="filter"
-          :filter-method="customFilteringFn"
-          @filtered="filteredCount = $event.items.length"
-        >
-          <template #cell(name)="slotProps">
-            <div>
-              <p>{{ slotProps.rowData.user.name }}</p>
-            </div>
-          </template>
-          <template #cell(email)="slotProps">
-            <div>
-              <p>{{ slotProps.rowData.user.email }}</p>
-            </div>
-          </template>
-          <template #cell(roles)="slotProps">
-            <div>
-              <p>
-                [{{
-                  slotProps.rowData.roles.map((role) => role.name).join(', ') || 'Chưa có vai trò'
-                }}]
-              </p>
-            </div>
-          </template>
-          <template #cell(active)="slotProps">
-            <div class="active">
-              <va-switch
-                v-model="slotProps.rowData.user.active"
-                size="small"
-                color="success"
-                @change="onSwitchChange(slotProps.rowData.user)"
-              />
-            </div>
-          </template>
-          <template #cell(avatar)="slotProps">
-            <div class="avatar">
-              <va-avatar
-                :src="slotProps.rowData.user.avatar || '/defaultAvatar.png'"
-                size="small"
-              />
-            </div>
-          </template>
-          <template #cell(actions)="slotProps">
-            <div class="actions">
-              <VaButton
-                preset="plain"
-                icon="visibility"
-                @click="onShowDetailStaffModal(slotProps.rowData)"
-              />
-              <VaButton
-                preset="plain"
-                icon="edit"
-                class="ml-3"
-                @click="onShowEditStaffModal(slotProps.rowData)"
-              />
-            </div>
-          </template>
-        </va-data-table>
-        <div class="my-3 d-flex pagination-container">
-          <VaPagination
-            v-model="currentPageStaff"
-            :total="totalStaff"
-            :pages="totalPagesStaff"
-            :rows-per-page="pageSizeStaff"
-            :rows-per-page-options="[5, 10, 20]"
-            :visible-pages="5"
-            class="mt-6"
-            @update:modelValue="onPageChange"
-          />
-        </div>
+        <div v-if="activeTab === 'users'" class="mt-3">
+          <va-data-table
+            :items="users"
+            :columns="columns"
+            hoverable
+            :filter="filter"
+            :filter-method="customFilteringFn"
+            @filtered="filteredCount = $event.items.length"
+          >
+            <template #cell(id)="slotProps">
+              {{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
+            </template>
+            <template #cell(active)="slotProps">
+              <div class="active">
+                <va-switch
+                  v-model="slotProps.rowData.active"
+                  size="small"
+                  color="success"
+                  @change="onSwitchChange(slotProps.rowData)"
+                />
+              </div>
+            </template>
+            <template #cell(avatar)="slotProps">
+              <div class="avatar">
+                <va-avatar :src="slotProps.rowData.avatar || '/defaultAvatar.png'" size="small" />
+              </div>
+            </template>
+            <template #cell(actions)="slotProps">
+              <div class="actions">
+                <VaButton
+                  preset="plain"
+                  icon="visibility"
+                  @click="onShowDetailModal(slotProps.rowData)"
+                />
+              </div>
+            </template>
+          </va-data-table>
+          <div class="my-3 d-flex pagination-container">
+            <VaPagination
+              v-model="currentPage"
+              :total="total"
+              :pages="totalPages"
+              :rows-per-page="pageSize"
+              :rows-per-page-options="[5, 10, 20]"
+              :visible-pages="5"
+              class="mt-6"
+              @update:modelValue="onPageChange"
+            />
+          </div>
 
-        <div class="d-flex">
-          <VaAlert class="!mt-6" color="info" outline>
-            Number of filtered items:
-            <VaChip>{{ filteredCount }}</VaChip>
-          </VaAlert>
-          <VaAlert class="!mt-6" color="info" outline>
-            Total items:
-            <VaChip>{{ totalStaff }}</VaChip>
-          </VaAlert>
+          <div class="d-flex">
+            <VaAlert class="!mt-6" color="info" outline>
+              Number of filtered items:
+              <VaChip>{{ filteredCount }}</VaChip>
+            </VaAlert>
+            <VaAlert class="!mt-6" color="info" outline>
+              Total items:
+              <VaChip>{{ total }}</VaChip>
+            </VaAlert>
+          </div>
         </div>
-      </div>
-    </va-card-content>
-  </va-card>
+        <div v-else>
+          <div class="mb-3">
+            <va-button @click="onShowModalAdd"> Thêm nhân viên</va-button>
+          </div>
+          <va-data-table
+            :items="staffs"
+            :columns="columnsStaffTable"
+            hoverable
+            :filter="filter"
+            :filter-method="customFilteringFn"
+            @filtered="filteredCount = $event.items.length"
+          >
+            <template #cell(id)="slotProps">
+              {{ slotProps.rowIndex + 1 + (currentPageStaff - 1) * pageSizeStaff }}
+            </template>
+            <template #cell(name)="slotProps">
+              <div>
+                <p>{{ slotProps.rowData.user.name }}</p>
+              </div>
+            </template>
+            <template #cell(email)="slotProps">
+              <div>
+                <p>{{ slotProps.rowData.user.email }}</p>
+              </div>
+            </template>
+            <template #cell(roles)="slotProps">
+              <div>
+                <p>
+                  [{{
+                    slotProps.rowData.roles.map((role) => role.name).join(', ') ||
+                    'Chưa có vai trò'
+                  }}]
+                </p>
+              </div>
+            </template>
+            <template #cell(active)="slotProps">
+              <div class="active">
+                <va-switch
+                  v-model="slotProps.rowData.user.active"
+                  size="small"
+                  color="success"
+                  @change="onSwitchChange(slotProps.rowData.user)"
+                />
+              </div>
+            </template>
+            <template #cell(avatar)="slotProps">
+              <div class="avatar">
+                <va-avatar
+                  :src="slotProps.rowData.user.avatar || '/defaultAvatar.png'"
+                  size="small"
+                />
+              </div>
+            </template>
+            <template #cell(actions)="slotProps">
+              <div class="actions">
+                <VaButton
+                  preset="plain"
+                  icon="visibility"
+                  @click="onShowDetailStaffModal(slotProps.rowData)"
+                />
+                <VaButton
+                  preset="plain"
+                  icon="edit"
+                  class="ml-3"
+                  @click="onShowEditStaffModal(slotProps.rowData)"
+                />
+              </div>
+            </template>
+          </va-data-table>
+          <div class="my-3 d-flex pagination-container">
+            <VaPagination
+              v-model="currentPageStaff"
+              :total="totalStaff"
+              :pages="totalPagesStaff"
+              :rows-per-page="pageSizeStaff"
+              :rows-per-page-options="[5, 10, 20]"
+              :visible-pages="5"
+              class="mt-6"
+              @update:modelValue="onPageChange"
+            />
+          </div>
+
+          <div class="d-flex">
+            <VaAlert class="!mt-6" color="info" outline>
+              Number of filtered items:
+              <VaChip>{{ filteredCount }}</VaChip>
+            </VaAlert>
+            <VaAlert class="!mt-6" color="info" outline>
+              Total items:
+              <VaChip>{{ totalStaff }}</VaChip>
+            </VaAlert>
+          </div>
+        </div>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
   <va-modal v-model="isShowDetailStaffModal" hide-default-actions @close="onCloseDetailStaffModal">
     <DetailStaff
       v-if="isShowDetailStaffModal && selectedStaffDetail"
@@ -224,14 +233,13 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue3-toastify'
 
 const activeTab = ref('users')
-
 const router = useRouter()
 const userStore = useUserStore()
 const staffStore = useStaffStore()
 const staffs = ref<Staff[]>([])
 const users = ref<User[]>([])
 const columns = [
-  { key: 'id', label: 'ID' },
+  { key: 'id', label: 'STT' },
   { key: 'name', label: 'Họ & tên' },
   { key: 'email', label: 'Email' },
   { key: 'age', label: 'Tuổi' },
@@ -242,7 +250,7 @@ const columns = [
   { key: 'actions', label: 'Hành động', sortable: false },
 ]
 const columnsStaffTable = [
-  { key: 'id', label: 'ID' },
+  { key: 'id', label: 'STT' },
   { key: 'name', label: 'Họ & tên' },
   { key: 'email', label: 'Email' },
   { key: 'roles', label: 'Vai trò' },

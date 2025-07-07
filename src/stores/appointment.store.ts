@@ -1,8 +1,4 @@
-import type {
-  Appointment,
-  AppointmentRequest,
-  AppointmentResponse,
-} from '@/interfaces/appointment.interfaces'
+import type { Appointment } from '@/interfaces/appointment.interfaces'
 import type {
   APIResponse,
   ClientResponse,
@@ -21,13 +17,22 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
   }),
   getters: {},
   actions: {
-    async fetchAppointmentsByDoctor(page: number, pageSize: number) {
+    async fetchAppointmentsByDoctor(
+      page: number,
+      pageSize: number,
+      filterStatus?: string,
+    ): Promise<ClientResponse<APIResponse<Appointment[]>>> {
       this.loading = true
       this.error = null
       try {
-        const res = await appointmentService.fetchAppointmentsByDoctor(page, pageSize)
-        this.appointments = res.data.data.result
-        this.meta = res.data.data.meta
+        const res = await appointmentService.fetchAppointmentsByDoctor(page, pageSize, filterStatus)
+        if (res.success) {
+          this.appointments = res.data.data.result
+          this.meta = res.data.data.meta
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(this.error)
+        }
       } catch (error) {
         this.error = error.message || 'Không thể tải danh sách cuộc hẹn của bác sĩ.'
       } finally {
@@ -119,25 +124,31 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
-    async createAppointment(
-      request: AppointmentRequest,
-    ): Promise<ClientResponse<APIResponse<AppointmentResponse>>> {
+    async createAppointment(request: AppointmentRequest): Promise<string> {
       this.loading = true
       this.error = null
       try {
-        const res = await appointmentService.createAppointment(request)
-        if (res.success) {
-          if (res.data.data) {
-            this.appointments.push(res.data.data)
-          }
-          return res
+        // Giả sử appointmentService.createAppointment trả về response từ axios/fetch
+        const response = await appointmentService.createAppointment(request)
+
+        const paymentInfo = response.data // Giả sử API trả về trong `data`
+
+        if (paymentInfo && paymentInfo.data?.status === 'OK' && paymentInfo.data?.url) {
+          // THAY ĐỔI 2: Trả về URL thanh toán nếu thành công
+          return paymentInfo.data.url
         } else {
-          this.error = res?.error?.details?.error
-          throw new Error(this.error)
+          // Nếu backend trả về lỗi có cấu trúc
+          const errorMessage = paymentInfo?.message || 'Không thể tạo yêu cầu thanh toán.'
+          this.error = errorMessage
+          throw new Error(errorMessage)
         }
-      } catch (error) {
-        this.error = error.message || 'Không thể tạo cuộc hẹn.'
-        throw new Error(this.error)
+      } catch (error: any) {
+        // THAY ĐỔI 3: Xử lý lỗi từ axios/fetch
+        // Lỗi từ backend (ví dụ 400 Bad Request) thường nằm trong error.response.data
+        const backendError =
+          error.response?.data?.message || error.response?.data?.error || 'Không thể tạo cuộc hẹn.'
+        this.error = backendError
+        throw new Error(backendError)
       } finally {
         this.loading = false
       }

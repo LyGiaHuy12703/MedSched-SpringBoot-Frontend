@@ -1,13 +1,23 @@
-import type { AppointmentRequest, AppointmentResponse } from '@/interfaces/appointment.interfaces'
+import type {
+  Appointment,
+  AppointmentRequest,
+  AppointmentResponse,
+} from '@/interfaces/appointment.interfaces'
+import type { PaymentResponseInfo } from '@/interfaces/payment.interface'
 import type { APIResponse, ClientResponse } from '@/interfaces/response.interface'
 import apiClient from '@/utils/httpClient'
 
 const appointmentService = {
-  async fetchAppointmentsByDoctor(page: number, size: number) {
+  async fetchAppointmentsByDoctor(
+    page: number,
+    size: number,
+    status?: string,
+  ): Promise<ClientResponse<APIResponse<Appointment[]>>> {
     return await apiClient.get('appointments/staff', {
       params: {
         page: page,
         size: size,
+        ...(status ? { filter: `status~'${status}'` } : {}),
       },
     })
   },
@@ -41,7 +51,7 @@ const appointmentService = {
   },
   async createAppointment(
     request: AppointmentRequest,
-  ): Promise<ClientResponse<APIResponse<AppointmentResponse>>> {
+  ): Promise<ClientResponse<APIResponse<PaymentResponseInfo>>> {
     return await apiClient.post('appointments', request)
   },
 }

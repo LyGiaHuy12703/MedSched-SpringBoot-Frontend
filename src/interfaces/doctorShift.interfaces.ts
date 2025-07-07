@@ -8,8 +8,11 @@ export type DoctorShift = {
   dayWork: string
   dayOfWeek: string
   status: string
-  departments: string
-  staffs: Staff[]
+  departmentDTO: {
+    id: string
+    name: string
+  }
+  staff: Staff
   appointments: Appointment[]
   createdAt: string
   updatedAt: string
@@ -21,7 +24,7 @@ export type DoctorShiftCreateRequest = {
   startTime: string
   endTime: string
   dayWork: string
-  staffIds: string[]
+  staffId: string
 }
 export type DoctorShiftStatusUpdateRequest = {
   status: string

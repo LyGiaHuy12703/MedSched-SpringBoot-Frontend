@@ -27,7 +27,7 @@
         </template>
         <template #cell(status)="slotProps">
           <span
-            v-if="['COMPLETED', 'CANCELED', 'APPROVED', 'IN_PROCESS'].includes(slotProps.rowData.status)"
+            v-if="['COMPLETED', 'CANCELED', 'APPROVED', 'IN_PROGRESS'].includes(slotProps.rowData.status)"
             :class="`status-text ${slotProps.rowData.status.toLowerCase()}`"
           >
             {{ slotProps.rowData.status }}
@@ -52,7 +52,7 @@
 <script lang="ts" setup>
 import type { DoctorShift } from '@/interfaces/doctorShift.interfaces'
 import { useScheduleStore } from '@/stores/schedule.store'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { toast } from 'vue3-toastify'
 
 // Enum ShiftStatusEnum dưới dạng object trong TypeScript
@@ -136,7 +136,7 @@ const handleUpdateStatus = async (id: string, newStatus: string, originalStatus:
     toast.success('Cập nhật trạng thái thành công')
     status.value =
       optionsStatus.value.find(
-        (option) =>
+        () =>
           optionsStatusChange.value.find((change) => change.value === newStatus)?.submissionValue ||
           newStatus,
       )?.value || status.value

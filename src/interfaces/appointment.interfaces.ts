@@ -1,4 +1,6 @@
 import type { DoctorShift } from './doctorShift.interfaces'
+import type { Invoice } from './invoice.interfaces'
+import type { Service } from './service.interfaces'
 import type { Staff } from './staff.interface'
 import type { User } from './user.interface'
 
@@ -11,6 +13,8 @@ export type Appointment = {
   phoneReceiveInfo: string
   dob: string
   gender: string
+  invoice: Invoice
+  services: Service[]
   staff: Staff
   user: User
   reason: string
@@ -50,3 +54,5 @@ export type AppointmentResponse = {
   createdBy?: string
   updatedBy?: string
 }
+
+

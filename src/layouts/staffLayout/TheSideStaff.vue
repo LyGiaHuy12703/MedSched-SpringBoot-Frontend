@@ -121,7 +121,7 @@ const sidebarClass = computed(() => {
   border-right: 1px solid var(--va-border);
   transition: all 0.3s ease;
   position: relative;
-  z-index: 100;
+  z-index: 1;
 }
 
 .sidebar-content {

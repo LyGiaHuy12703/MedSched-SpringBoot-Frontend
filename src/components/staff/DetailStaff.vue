@@ -6,18 +6,6 @@
         <h1 class="va-h4">Chi tiết nhân viên</h1>
       </va-card-title>
       <va-card-content class="content">
-        <div v-if="staffData" class="detail-grid mb-3">
-          <!-- ID -->
-          <div class="detail-item">
-            <div class="label">
-              <va-icon name="fingerprint" size="small" class="mr-1" />
-              ID
-            </div>
-            <va-chip color="primary" outline size="large" class="value">
-              {{ staffData.id }}
-            </va-chip>
-          </div>
-        </div>
         <div v-if="staffData" class="detail-grid">
           <!-- Tên người dùng -->
           <div class="detail-item">

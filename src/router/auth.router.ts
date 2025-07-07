@@ -11,6 +11,15 @@ const authRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/auth/receive-tokens',
+    name: 'ReceiveToken',
+    component: () => import('@/views/auth/ReceiveTokens.vue'),
+    meta: {
+      layout: 'Auth',
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/register',
     name: 'Register',
     component: () => import('@/views/auth/RegisterPage.vue'),

@@ -1,88 +1,93 @@
 <template>
-  <va-card>
-    <va-card-content>
-      <div class="justify-content-around my-3">
-        <div class="my-3"><h1>Quản lý vai trò</h1></div>
-        <div><va-button @click="onShowAddModal">Thêm vai trò</va-button></div>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Nhập mã, tên hoặc mô tả để tìm kiếm..."
-          clearable
-          class="filter-input"
-          aria-label="Tìm kiếm bác sĩ theo tên"
-        >
-          <template #prependInner>
-            <va-icon name="search" color="#718096" />
-          </template>
-        </va-input>
-
-        <div class="filter-actions">
-          <va-button preset="secondary" @click="resetFilters" class="action-button">
-            Xóa bộ lọc
-          </va-button>
-          <va-button preset="primary" @click="handleSearch" class="action-button">
-            Tìm kiếm
-          </va-button>
+  <va-inner-loading :loading="roleStore.loading">
+    <va-card>
+      <va-card-content>
+        <div class="justify-content-around my-3">
+          <div class="my-3"><h1>Quản lý vai trò</h1></div>
+          <div><va-button @click="onShowAddModal">Thêm vai trò</va-button></div>
         </div>
-      </div>
-      <va-data-table
-        :columns="columns"
-        :items="roleList"
-        hoverable
-        @filtered="filteredCount = $event.items.length"
-      >
-        <template #cell(active)="slotProps">
-          <VaChip :color="slotProps.rowData.active ? '#3D9209' : '#E42222'">
-            {{ slotProps.rowData.active ? 'Active' : 'Inactive' }}
-          </VaChip>
-        </template>
-        <template #cell(actions)="slotProps">
-          <VaButton
-            preset="plain"
-            icon="visibility"
-            @click="onShowDetailModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="edit"
-            class="ml-3"
-            @click="onShowEditModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="delete"
-            class="ml-3"
-            @click="onShowDeleteModal(slotProps.rowData)"
-          />
-        </template>
-      </va-data-table>
-      <div class="my-3 d-flex pagination-container">
-        <VaPagination
-          v-model="currentPage"
-          :total="total"
-          :pages="totalPages"
-          :rows-per-page="pageSize"
-          :rows-per-page-options="[5, 10, 20]"
-          :visible-pages="5"
-          class="mt-6"
-          @update:modelValue="onPageChange"
-        />
-      </div>
+        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Nhập mã, tên hoặc mô tả để tìm kiếm..."
+            clearable
+            class="filter-input"
+            aria-label="Tìm kiếm bác sĩ theo tên"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="#718096" />
+            </template>
+          </va-input>
 
-      <div class="d-flex">
-        <VaAlert class="!mt-6" color="info" outline>
-          Number of filtered items:
-          <VaChip>{{ filteredCount }}</VaChip>
-        </VaAlert>
-        <VaAlert class="!mt-6" color="info" outline>
-          Total items:
-          <VaChip>{{ total }}</VaChip>
-        </VaAlert>
-      </div>
-    </va-card-content>
-  </va-card>
+          <div class="filter-actions">
+            <va-button preset="secondary" @click="resetFilters" class="action-button">
+              Xóa bộ lọc
+            </va-button>
+            <va-button preset="primary" @click="handleSearch" class="action-button">
+              Tìm kiếm
+            </va-button>
+          </div>
+        </div>
+        <va-data-table
+          :columns="columns"
+          :items="roleList"
+          hoverable
+          @filtered="filteredCount = $event.items.length"
+        >
+          <template #cell(id)="slotProps">
+            role0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
+          </template>
+          <template #cell(active)="slotProps">
+            <VaChip :color="slotProps.rowData.active ? '#3D9209' : '#E42222'">
+              {{ slotProps.rowData.active ? 'Active' : 'Inactive' }}
+            </VaChip>
+          </template>
+          <template #cell(actions)="slotProps">
+            <VaButton
+              preset="plain"
+              icon="visibility"
+              @click="onShowDetailModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="edit"
+              class="ml-3"
+              @click="onShowEditModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="delete"
+              class="ml-3"
+              @click="onShowDeleteModal(slotProps.rowData)"
+            />
+          </template>
+        </va-data-table>
+        <div class="my-3 d-flex pagination-container">
+          <VaPagination
+            v-model="currentPage"
+            :total="total"
+            :pages="totalPages"
+            :rows-per-page="pageSize"
+            :rows-per-page-options="[5, 10, 20]"
+            :visible-pages="5"
+            class="mt-6"
+            @update:modelValue="onPageChange"
+          />
+        </div>
+
+        <div class="d-flex">
+          <VaAlert class="!mt-6" color="info" outline>
+            Number of filtered items:
+            <VaChip>{{ filteredCount }}</VaChip>
+          </VaAlert>
+          <VaAlert class="!mt-6" color="info" outline>
+            Total items:
+            <VaChip>{{ total }}</VaChip>
+          </VaAlert>
+        </div>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
   <VaModal v-model="isShowAddModal" hide-default-actions>
     <AddRole
       v-if="isShowAddModal"
@@ -174,7 +179,7 @@ const filteredCount = ref(roleList.value.length)
 
 /**==========END=========== */
 const columns = [
-  { key: 'id', label: 'ID' },
+  { key: 'id', label: 'STT' },
   { key: 'name', label: 'Tên vai trò' },
   { key: 'description', label: 'Mô tả' },
   { key: 'active', label: 'trạng thái' },

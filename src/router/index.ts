@@ -57,7 +57,6 @@ router.beforeEach(async (to, from, next) => {
       return next() // Cho phép truy cập nếu role hợp lệ
     } else {
       if (isAuthenticated) {
-        // Người dùng đã đăng nhập nhưng role không hợp lệ
         if (userRole === 'ADMIN') {
           return next({ name: 'AdminDashboard' }) // Chuyển hướng đến AdminDashboard
         } else if (userRole === 'STAFF') {
@@ -66,6 +65,8 @@ router.beforeEach(async (to, from, next) => {
           modalStore.showModal('Vai trò của bạn không được phép truy cập trang này!')
           return next(false) // Hủy điều hướng
         }
+      } else if (!isAuthenticated && !to.meta.requiresAuth) {
+        return next()
       } else {
         // Người dùng chưa đăng nhập
         modalStore.showModal('Vui lòng đăng nhập để truy cập trang này!')

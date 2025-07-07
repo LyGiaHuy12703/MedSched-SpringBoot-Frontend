@@ -6,18 +6,6 @@
         <h1 class="va-h4">Chi tiết quyền hạn</h1>
       </VaCardTitle>
       <VaCardContent class="content">
-        <div v-if="permissionDetail" class="detail-grid mb-3">
-          <!-- ID -->
-          <div class="detail-item">
-            <div class="label">
-              <VaIcon name="fingerprint" size="small" class="mr-1" />
-              ID
-            </div>
-            <VaChip color="primary" outline size="large" class="value">
-              {{ permissionDetail.id }}
-            </VaChip>
-          </div>
-        </div>
         <div v-if="permissionDetail" class="detail-grid">
           <!-- Tên quyền hạn -->
           <div class="detail-item">

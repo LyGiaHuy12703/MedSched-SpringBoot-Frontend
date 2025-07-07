@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { StandardizedError } from '@/interfaces/response.interface'
 import type {
   Account,
+  AuthResponse,
   ChangePassword,
   LoginRequest,
   RequestUpdateInfo,
@@ -146,7 +147,22 @@ export const useAuthStore = defineStore('auth', {
       this.resetAuth()
       toast.success('Đăng xuất thành công')
     },
+    handleOAuthCallback(user: any, accessToken: string, refreshToken: string) {
+      try {
+        const authData: AuthResponse = {
+          user: user,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }
+        console.log({ authData })
 
+        authService.updateLocalStorage(authData)
+      } catch (error) {
+        console.error('Lỗi khi giải mã token hoặc lưu trữ:', error)
+        // Ném lỗi để component callback có thể bắt và xử lý
+        throw new Error('Token không hợp lệ hoặc đã hết hạn.')
+      }
+    },
     resetAuth(): null {
       const userStore = useUserStore()
       this.loggedIn = false

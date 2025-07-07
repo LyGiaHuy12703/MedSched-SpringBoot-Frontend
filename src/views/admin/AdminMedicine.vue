@@ -1,108 +1,113 @@
 <template>
-  <va-card>
-    <va-card-content>
-      <div class="justify-content-around my-3">
-        <div class="my-3"><h1>Quản lý dữ liệu thuốc</h1></div>
-        <div><va-button @click="onShowModalAdd">Thêm thuốc</va-button></div>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Nhập mã thuốc, tên, mô tả..."
-          clearable
-          class="filter-input"
-          aria-label="Tìm kiếm bác sĩ theo tên"
-        >
-          <template #prependInner>
-            <va-icon name="search" color="#718096" />
-          </template>
-        </va-input>
-
-        <div class="filter-actions">
-          <va-button preset="secondary" @click="resetFilters" class="action-button">
-            Xóa bộ lọc
-          </va-button>
-          <va-button preset="primary" @click="handleSearch" class="action-button">
-            Tìm kiếm
-          </va-button>
+  <va-inner-loading :loading="medicineStore.loading">
+    <va-card>
+      <va-card-content>
+        <div class="justify-content-around my-3">
+          <div class="my-3"><h1>Quản lý dữ liệu thuốc</h1></div>
+          <div><va-button @click="onShowModalAdd">Thêm thuốc</va-button></div>
         </div>
-      </div>
-      <VaDataTable
-        :items="medicineList"
-        :columns="columns"
-        hoverable
-        @filtered="filteredCount = $event.items.length"
-      >
-        <template #cell(actions)="slotProps">
-          <VaButton
-            preset="plain"
-            icon="visibility"
-            @click="onShowDetailModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="edit"
-            class="ml-3"
-            @click="onShowEditModal(slotProps.rowData)"
-          />
-          <VaButton
-            preset="plain"
-            icon="delete"
-            class="ml-3"
-            @click="onShowDeleteModal(slotProps.rowData)"
-          />
-        </template>
-      </VaDataTable>
-      <div class="my-3 d-flex pagination-container">
-        <VaPagination
-          v-model="currentPage"
-          :total="total"
-          :pages="totalPages"
-          :rows-per-page="pageSize"
-          :rows-per-page-options="[5, 10, 20]"
-          :visible-pages="5"
-          class="mt-6"
-          @update:modelValue="onPageChange"
-        />
-      </div>
+        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Nhập mã thuốc, tên, mô tả..."
+            clearable
+            class="filter-input"
+            aria-label="Tìm kiếm bác sĩ theo tên"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="#718096" />
+            </template>
+          </va-input>
 
-      <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
-        <AddMedicine
-          :medicineData="medicineData"
-          @save-medicine="onSaveMedicine"
-          @close-modal="onCloseModalAdd"
-        />
-      </va-modal>
-      <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
-        <DetailMedicine :medicine-data="selectedMedicine" @close-modal="onCloseModalDetail" />
-      </va-modal>
-      <va-modal v-model="showModalEdit" hide-default-actions @close="onCloseModalEdit">
-        <EditMedicine
-          :medicine-data="medicineDataEdit"
-          @edit-medicine="onEditMedicine"
-          @close="onCloseModalEdit"
-        />
-      </va-modal>
-      <va-modal v-model="showModalDelete" hide-default-actions>
-        <DeleteConfirm
-          title="Cảnh báo xóa thuốc"
-          message="Bạn có muốn xóa dữ liệu thuốc không?"
-          @confirm="onDeleteMedicine"
-          @close-confirm="onCloseModalDelete"
-        />
-      </va-modal>
-      <div class="d-flex">
-        <VaAlert class="!mt-6" color="info" outline>
-          Number of filtered items:
-          <VaChip>{{ filteredCount }}</VaChip>
-        </VaAlert>
-        <VaAlert class="!mt-6" color="info" outline>
-          Total items:
-          <VaChip>{{ total }}</VaChip>
-        </VaAlert>
-      </div>
-    </va-card-content>
-  </va-card>
+          <div class="filter-actions">
+            <va-button preset="secondary" @click="resetFilters" class="action-button">
+              Xóa bộ lọc
+            </va-button>
+            <va-button preset="primary" @click="handleSearch" class="action-button">
+              Tìm kiếm
+            </va-button>
+          </div>
+        </div>
+        <VaDataTable
+          :items="medicineList"
+          :columns="columns"
+          hoverable
+          @filtered="filteredCount = $event.items.length"
+        >
+          <template #cell(id)="slotProps">
+            med0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
+          </template>
+          <template #cell(actions)="slotProps">
+            <VaButton
+              preset="plain"
+              icon="visibility"
+              @click="onShowDetailModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="edit"
+              class="ml-3"
+              @click="onShowEditModal(slotProps.rowData)"
+            />
+            <VaButton
+              preset="plain"
+              icon="delete"
+              class="ml-3"
+              @click="onShowDeleteModal(slotProps.rowData)"
+            />
+          </template>
+        </VaDataTable>
+        <div class="my-3 d-flex pagination-container">
+          <VaPagination
+            v-model="currentPage"
+            :total="total"
+            :pages="totalPages"
+            :rows-per-page="pageSize"
+            :rows-per-page-options="[5, 10, 20]"
+            :visible-pages="5"
+            class="mt-6"
+            @update:modelValue="onPageChange"
+          />
+        </div>
+
+        <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
+          <AddMedicine
+            :medicineData="medicineData"
+            @save-medicine="onSaveMedicine"
+            @close-modal="onCloseModalAdd"
+          />
+        </va-modal>
+        <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseModalDetail">
+          <DetailMedicine :medicine-data="selectedMedicine" @close-modal="onCloseModalDetail" />
+        </va-modal>
+        <va-modal v-model="showModalEdit" hide-default-actions @close="onCloseModalEdit">
+          <EditMedicine
+            :medicine-data="medicineDataEdit"
+            @edit-medicine="onEditMedicine"
+            @close="onCloseModalEdit"
+          />
+        </va-modal>
+        <va-modal v-model="showModalDelete" hide-default-actions>
+          <DeleteConfirm
+            title="Cảnh báo xóa thuốc"
+            message="Bạn có muốn xóa dữ liệu thuốc không?"
+            @confirm="onDeleteMedicine"
+            @close-confirm="onCloseModalDelete"
+          />
+        </va-modal>
+        <div class="d-flex">
+          <VaAlert class="!mt-6" color="info" outline>
+            Number of filtered items:
+            <VaChip>{{ filteredCount }}</VaChip>
+          </VaAlert>
+          <VaAlert class="!mt-6" color="info" outline>
+            Total items:
+            <VaChip>{{ total }}</VaChip>
+          </VaAlert>
+        </div>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
 </template>
 <script setup lang="ts">
 import DeleteConfirm from '@/components/DeleteConfirm.vue'
@@ -117,11 +122,11 @@ import { toast } from 'vue3-toastify'
 const medicineStore = useMedicineStore()
 const medicineList = ref(medicineStore.medicines || [])
 const columns = [
-  { text: 'ID', value: 'id', key: 'id' },
-  { text: 'Tên thuốc', value: 'name', key: 'name' },
-  { text: 'Giá', value: 'price', key: 'price' },
-  { text: 'Mô tả', value: 'description', key: 'description' },
-  { text: 'Hành động', value: 'actions', key: 'actions', sortable: false },
+  { label: 'STT', value: 'id', key: 'id' },
+  { label: 'Tên thuốc', value: 'name', key: 'name' },
+  { label: 'Giá', value: 'price', key: 'price' },
+  { label: 'Mô tả', value: 'description', key: 'description' },
+  { label: 'Hành động', value: 'actions', key: 'actions', sortable: false },
 ]
 const searchQuery = ref('')
 const resetFilters = () => {
