@@ -34,22 +34,22 @@ onUnmounted(() => {
 const route = useRoute()
 const breadcrumbs = computed(() => {
   // Nếu là trang home
-  if (route.path === '/' || route.path === '/staff' || route.path === '/staff/') {
-    return [{ label: 'Staff', to: '/staff' }, { label: 'Dashboard' }]
+  if (route.path === '/' || route.path === '/admin' || route.path === '/admin/') {
+    return [{ label: 'Admin', to: '/admin' }, { label: 'Dashboard' }]
   }
   // Nếu có meta.breadcrumbs thì dùng
   if (route.meta && route.meta.breadcrumbs) {
     return [
-      { label: 'Staff', to: '/staff' },
+      { label: 'Admin', to: '/admin' },
       ...(route.meta.breadcrumbs as Array<{ label: string; to?: string }>),
     ]
   }
   // Tạo breadcrumbs động từ path
   const paths = route.path.replace(/^\/|\/$/g, '').split('/')
-  let acc = '/staff'
-  const crumbs = [{ label: 'Staff', to: '/staff' }]
+  let acc = '/admin'
+  const crumbs = [{ label: 'Admin', to: '/admin' }]
   paths.forEach((p) => {
-    if (p && p !== 'staff') {
+    if (p && p !== 'admin') {
       acc += '/' + p
       crumbs.push({ label: p.charAt(0).toUpperCase() + p.slice(1), to: acc })
     }
@@ -59,18 +59,19 @@ const breadcrumbs = computed(() => {
 </script>
 
 <template>
-  <div class="staff-layout">
+  <div class="admin-layout">
     <TheSideStaff
       :is-minimized="isSidebarMinimized"
       :is-visible="isSidebarVisible"
       @close="isSidebarVisible = false"
+      class="fixed-sidebar"
     />
 
     <div
-      class="staff-content"
+      class="admin-content"
       :class="{ 'sidebar-minimized': isSidebarMinimized, 'sidebar-hidden': !isSidebarVisible }"
     >
-      <TheNavStaff @toggle-sidebar="toggleSidebar" />
+      <TheNavStaff @toggle-sidebar="toggleSidebar" class="fixed-header" />
 
       <main class="content-wrapper">
         <va-breadcrumbs class="breadcrumbs mx-4" separator="/">
@@ -87,18 +88,17 @@ const breadcrumbs = computed(() => {
           <slot />
         </div>
       </main>
-
-      <!-- <AppFooter /> -->
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.staff-layout {
+.admin-layout {
   display: flex;
   min-height: 100vh;
   overflow: hidden;
 }
+
 .fixed-sidebar {
   position: fixed;
   top: 0;
@@ -115,12 +115,14 @@ const breadcrumbs = computed(() => {
   width: inherit;
   background: var(--va-background-element);
 }
-.staff-content {
+
+.admin-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   transition: margin-left 0.3s ease;
   width: calc(100% - 250px);
+  margin-left: 250px;
 
   &.sidebar-minimized {
     margin-left: 64px;
@@ -137,16 +139,39 @@ const breadcrumbs = computed(() => {
   flex: 1;
   overflow-y: auto;
   background-color: var(--va-background-element);
+  margin-top: 64px; // Height of header
+  overflow-x: hidden;
+}
+
+.breadcrumbs {
+  position: sticky;
+  top: 0;
+  background: var(--va-background-element);
+  padding: 1rem 0;
+  z-index: 1;
 }
 
 .content-container {
-  height: 100%;
+  min-height: calc(100vh - 64px - 48px); // Subtract header height and breadcrumbs height
 }
 
 @media (max-width: 767px) {
-  .staff-content {
+  .admin-content {
     width: 100%;
     margin-left: 0;
+  }
+
+  .fixed-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+
+    &.visible {
+      transform: translateX(0);
+    }
+  }
+
+  .fixed-header {
+    width: 100%;
   }
 }
 </style>

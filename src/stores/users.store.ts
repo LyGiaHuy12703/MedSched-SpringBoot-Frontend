@@ -7,7 +7,8 @@ import type {
   ClientResponse,
   StandardizedError,
 } from '@/interfaces/response.interface'
-
+import jwtDecode from 'jwt-decode'
+import type { DecodedToken } from '@/interfaces/auth.interfaces'
 type Role = 'ADMIN' | 'STAFF' | 'PATIENT'
 
 export const useUserStore = defineStore('user', {
@@ -19,9 +20,16 @@ export const useUserStore = defineStore('user', {
     error: null as StandardizedError | string | null,
     role: '' as Role | '',
     token: null as string | null,
+    Permissions: [] as string[],
   }),
   getters: {
     isAuthenticated: (state) => !!state.token,
+    hasPermission:
+      (state) =>
+      (permission: string): boolean => {
+        if (!state.Permissions || state.Permissions.length === 0) return false
+        return state.Permissions.includes(permission)
+      },
   },
   actions: {
     async fetchUsers(page: number, size: number, search?: string) {
@@ -67,6 +75,8 @@ export const useUserStore = defineStore('user', {
     setUser(userData: { role: Role; token: string }) {
       this.role = userData.role
       this.token = userData.token
+      const data: DecodedToken = jwtDecode(userData.token)
+      this.Permissions = data?.permission || []
     },
 
     clearUser() {

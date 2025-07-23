@@ -16,7 +16,7 @@
           class="status-filter"
         />
       </div>
-      <va-data-table :items="schedules" :columns="columns" class="custom-table">
+      <va-data-table :items="schedules" :columns="columns" class="custom-table" hoverable>
         <template #cell(name)="slotProps">
           <span class="staff-name">{{
             slotProps.rowData.staffs
@@ -27,7 +27,11 @@
         </template>
         <template #cell(status)="slotProps">
           <span
-            v-if="['COMPLETED', 'CANCELED', 'APPROVED', 'IN_PROGRESS'].includes(slotProps.rowData.status)"
+            v-if="
+              ['COMPLETED', 'CANCELED', 'APPROVED', 'IN_PROGRESS'].includes(
+                slotProps.rowData.status,
+              )
+            "
             :class="`status-text ${slotProps.rowData.status.toLowerCase()}`"
           >
             {{ slotProps.rowData.status }}

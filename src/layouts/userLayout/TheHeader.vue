@@ -34,7 +34,7 @@
             <span>Đánh giá</span>
           </RouterLink>
 
-          <RouterLink to="/manage-bookings" class="nav-link">
+          <RouterLink to="/manage-bookings" class="nav-link" v-if="isAuthenticated">
             <VaIcon name="event_note" class="nav-icon" />
             <span>Quản lý lịch hẹn</span>
           </RouterLink>
@@ -279,7 +279,7 @@ onMounted(async () => {
 .app-header-clean {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1;
   background: #ecf0f1;
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--va-background-border);

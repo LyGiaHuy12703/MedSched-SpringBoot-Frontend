@@ -12,6 +12,16 @@ const userRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/home',
+    name: 'Home',
+    component: () => import('@/views/users/HomePage.vue'),
+    meta: {
+      layout: 'Client',
+      requiredAuth: false,
+      allowedRoles: ['PATIENT', null],
+    },
+  },
+  {
     path: '/profiles',
     name: 'Profiles',
     component: () => import('@/views/users/UserProfile.vue'),

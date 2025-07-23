@@ -1,4 +1,4 @@
-import type { MedicalRecord } from '@/interfaces/medicalRecord.interface'
+import type { MedicalRecord } from '@/interfaces/medicalRecord.interfaces'
 import type { RequestMedicalRecord } from '@/interfaces/medicalRecord.interfaces'
 import type { APIResponse, ClientResponse } from '@/interfaces/response.interface'
 import apiClient from '@/utils/httpClient'

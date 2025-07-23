@@ -23,7 +23,7 @@
                 class="check-mark"
               />
             </svg>
-            <svg v-else width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <svg v-if="status === 'error'" width="64" height="64" viewBox="0 0 24 24" fill="none">
               <circle
                 cx="12"
                 cy="12"
@@ -49,51 +49,78 @@
                 class="x-mark"
               />
             </svg>
+            <svg v-if="status === 'warning'" width="64" height="64" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="2"
+                class="circle-bg"
+              />
+              <path
+                d="M12 8v4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="warning-line"
+              />
+              <circle cx="12" cy="16" r="1" fill="currentColor" class="warning-dot" />
+            </svg>
           </div>
           <div class="status-glow" :class="glowClass"></div>
         </div>
 
         <!-- Title with Animation -->
         <h1 class="result-title" :class="titleClass">
-          {{ status === 'success' ? 'Thanh toán thành công!' : 'Thanh toán thất bại!' }}
+          {{
+            status === 'success'
+              ? 'Thanh toán thành công!'
+              : status === 'warning'
+                ? 'Chưa đăng ký - Cần xác nhận!'
+                : 'Thanh toán thất bại!'
+          }}
         </h1>
 
         <!-- Message -->
         <p class="result-message">
           {{
             status === 'success'
-              ? 'Cảm ơn bạn đã đặt lịch khám. Lịch hẹn của bạn đã được xác nhận. Vui lòng kiểm tra email để biết thêm chi tiết.'
-              : message ||
-                'Đã xảy ra lỗi trong quá trình thanh toán. Vui lòng thử lại hoặc liên hệ hỗ trợ nếu cần thiết.'
+              ? 'Cảm ơn bạn đã đặt lịch khám. Lịch hẹn của bạn đã được xác nhận.'
+              : status === 'warning'
+                ? 'Tài khoản của bạn chưa đăng ký vào hệ thống đặt lịch hẹn. Vui lòng kiểm tra email để nhận hướng dẫn tiếp theo, bao gồm thông tin thanh toán hoặc xác nhận từ nhân viên y tế.'
+                : message ||
+                  'Đã xảy ra lỗi trong quá trình thanh toán. Vui lòng thử lại hoặc liên hệ hỗ trợ nếu cần thiết.'
           }}
         </p>
 
-        <!-- Order ID (if available) -->
-        <!-- <div v-if="orderId" class="order-info">
-          <span class="order-label">Mã đơn hàng:</span>
-          <span class="order-id">{{ orderId }}</span>
+        <!-- Payment Instruction (for success or warning case)
+        <div v-if="status === 'success' || status === 'warning'" class="payment-instruction">
+          <va-icon name="email" color="primary" />
+          <span>
+            Vui lòng kiểm tra email để cập nhật trạng thái hoặc hoàn tất thanh toán. Nếu không nhận
+            được email, hãy kiểm tra thư mục spam.
+          </span>
         </div> -->
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button v-if="status === 'error'" class="btn btn-secondary" @click="goToBooking">
+          <button
+            v-if="status === 'error' || status === 'warning'"
+            class="btn btn-secondary"
+            @click="goToRegister"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
-                d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="m3 3 2.5 5H9"
+                d="M12 4v16m8-8H4"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
             </svg>
-            Thử lại đặt lịch
+            Đăng ký tài khoản
           </button>
 
           <button class="btn btn-primary" @click="goToHome">
@@ -130,10 +157,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
+
 // Props
 const props = withDefaults(
   defineProps<{
-    status?: 'success' | 'error'
+    status?: 'success' | 'error' | 'warning'
     orderId?: string
     message?: string
   }>(),
@@ -146,22 +174,24 @@ const props = withDefaults(
 const iconClass = computed(() => ({
   success: props.status === 'success',
   error: props.status === 'error',
+  warning: props.status === 'warning',
 }))
 
 const glowClass = computed(() => ({
   'success-glow': props.status === 'success',
   'error-glow': props.status === 'error',
+  'warning-glow': props.status === 'warning',
 }))
 
 const titleClass = computed(() => ({
   'success-title': props.status === 'success',
   'error-title': props.status === 'error',
+  'warning-title': props.status === 'warning',
 }))
 
-// Event handlers (placeholder functions)
-const goToBooking = () => {
-  // console.log('Navigate to booking page')
-  router.push({ name: 'Bookings' });
+// Event handlers
+const goToRegister = () => {
+  router.push({ name: 'Register' }) // Điều hướng đến trang đăng ký
 }
 
 const goToHome = () => {
@@ -170,10 +200,7 @@ const goToHome = () => {
 </script>
 
 <style scoped>
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); */
-
 .payment-result {
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -181,6 +208,8 @@ const goToHome = () => {
   font-family: 'Inter', sans-serif;
   position: relative;
   overflow: hidden;
+  align-items: center;
+  height: 60vh;
 }
 
 .payment-result::before {
@@ -288,6 +317,11 @@ const goToHome = () => {
   color: white;
 }
 
+.status-icon.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
 .status-glow {
   position: absolute;
   top: 50%;
@@ -306,6 +340,10 @@ const goToHome = () => {
 
 .error-glow {
   background: radial-gradient(circle, #ef4444, transparent);
+}
+
+.warning-glow {
+  background: radial-gradient(circle, #f59e0b, transparent);
 }
 
 @keyframes iconPop {
@@ -347,6 +385,16 @@ const goToHome = () => {
   animation: drawX 0.6s ease-out 1s both;
 }
 
+.warning-line {
+  stroke-dasharray: 4;
+  stroke-dashoffset: 4;
+  animation: drawWarning 0.6s ease-out 1s both;
+}
+
+.warning-dot {
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
 @keyframes drawCircle {
   0% {
     stroke-dasharray: 0 62.83;
@@ -374,6 +422,25 @@ const goToHome = () => {
   }
 }
 
+@keyframes drawWarning {
+  0% {
+    stroke-dashoffset: 4;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
 .result-title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -396,6 +463,13 @@ const goToHome = () => {
   background-clip: text;
 }
 
+.warning-title {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 @keyframes titleSlide {
   0% {
     opacity: 0;
@@ -411,11 +485,33 @@ const goToHome = () => {
   font-size: 1rem;
   color: #6b7280;
   line-height: 1.7;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   animation: messageSlide 0.8s ease-out 0.6s both;
 }
 
-@keyframes messageSlide {
+.payment-instruction {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  animation: instructionSlide 0.8s ease-out 0.7s both;
+
+  span {
+    font-size: 0.95rem;
+    color: #374151;
+    line-height: 1.5;
+  }
+
+  .va-icon {
+    flex-shrink: 0;
+  }
+}
+
+@keyframes instructionSlide {
   0% {
     opacity: 0;
     transform: translateY(20px);

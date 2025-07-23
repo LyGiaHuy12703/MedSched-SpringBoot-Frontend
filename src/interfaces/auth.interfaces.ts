@@ -48,3 +48,21 @@ export type ChangePassword = {
   password: string
   newPassword: string
 }
+export type DecodedToken = {
+  sub: string
+  permission: string[]
+  exp: number
+  iat: number
+  user: {
+    id: string
+    name: string
+    email: string
+    role: string
+    avatarUrl: string
+    phone: string
+    address: string
+    gender: string
+    dob: string
+    age: number
+  }
+}

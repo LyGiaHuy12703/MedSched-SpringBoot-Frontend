@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useUserStore } from '@/stores/users.store'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -14,7 +15,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
-
+const userStore = useUserStore()
 const router = useRouter()
 const activeMenuItem = ref('dashboard')
 
@@ -29,37 +30,60 @@ const navigateTo = (path: string) => {
 
 const menuItems = [
   {
-    name: 'Dashboard',
+    name: 'Trang chủ',
     icon: 'dashboard',
     path: 'dashboard',
   },
   {
-    name: 'Schedules',
-    icon: 'assignment',
+    name: 'Lịch trực',
+    icon: 'calendar_month', // Icon rõ ràng hơn cho lịch trình
     path: 'schedules',
+    requiresPermission: ['GET_DOCTOR_SHIFT'],
   },
   {
-    name: 'Tasks',
-    icon: 'assignment',
+    name: 'Thông tin hóa đơn',
+    icon: 'attach_money', // Icon rõ ràng hơn cho viện phí
+    path: 'fees',
+    // requiresPermission: ['GET_INVOICES'],
+  },
+  {
+    name: 'Danh sách bệnh nhân',
+    icon: 'people', // Icon rõ ràng hơn cho danh sách bệnh nhân
+    path: 'patients',
+    requiresPermission: ['GET_APPOINTMENT'],
+  },
+  {
+    name: 'Lịch hẹn khám bệnh',
+    icon: 'assignment_ind', // Icon rõ ràng hơn cho cuộc hẹn
     path: 'appointments',
+    requiresPermission: ['GET_APPOINTMENT'],
   },
-  // {
-  //   name: 'Customer Support',
-  //   icon: 'support_agent',
-  //   path: 'support',
-  // },
-  // {
-  //   name: 'Reports',
-  //   icon: 'assessment',
-  //   path: 'reports',
-  // },
   {
-    name: 'Profile',
+    name: 'Cấp phát thuốc', // Tên mục mới
+    icon: 'medication', // Icon phù hợp
+    path: 'medicine-dispense', // path khớp với endpoint bạn cung cấp
+    requiresPermission: ['POST_INVENTORY', 'POST_DISPENSE'],
+  },
+  {
+    name: 'Cá nhân',
     icon: 'person',
     path: 'profiles',
+    requiresPermission: ['GET_AUTH', 'PUT_AUTH'],
   },
 ]
-
+const filteredMenuItems = computed(() => {
+  return menuItems.filter((item) => {
+    // Nếu mục không yêu cầu quyền, luôn hiển thị
+    if (!item.requiresPermission || item.requiresPermission.length === 0) {
+      return true
+    }
+    console.log(
+      'Checking permissions for:',
+      item.requiresPermission.some((permission) => userStore.hasPermission(permission)),
+    )
+    return item.requiresPermission.some((permission) => userStore.hasPermission(permission))
+  })
+})
 const sidebarClass = computed(() => {
   return {
     'sidebar-minimized': props.isMinimized,
@@ -93,7 +117,7 @@ const sidebarClass = computed(() => {
 
       <div class="sidebar-menu">
         <div
-          v-for="item in menuItems"
+          v-for="item in filteredMenuItems"
           :key="item.path"
           class="menu-item"
           :class="{ active: activeMenuItem === item.path }"
@@ -107,7 +131,7 @@ const sidebarClass = computed(() => {
       <div class="sidebar-footer">
         <div class="menu-item" @click="navigateTo('logout')">
           <va-icon name="logout" />
-          <span class="menu-item-text" v-if="!isMinimized">Logout</span>
+          <span class="menu-item-text" v-if="!isMinimized">Đăng xuất</span>
         </div>
       </div>
     </div>

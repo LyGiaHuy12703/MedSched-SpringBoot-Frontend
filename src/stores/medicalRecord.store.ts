@@ -1,4 +1,4 @@
-import type { MedicalRecord } from '@/interfaces/medicalRecord.interface'
+import type { MedicalRecord } from '@/interfaces/medicalRecord.interfaces'
 import type { RequestMedicalRecord } from '@/interfaces/medicalRecord.interfaces'
 import type {
   APIResponse,
@@ -12,6 +12,7 @@ import { defineStore } from 'pinia'
 export const useMedicalRecordStore = defineStore('useMedicalRecordStore', {
   state: () => ({
     medicalRecords: [] as MedicalRecord[],
+    medicalRecord: null as MedicalRecord | null,
     meta: null as Meta | null,
     loading: false,
     error: null as StandardizedError | null,
@@ -109,6 +110,7 @@ export const useMedicalRecordStore = defineStore('useMedicalRecordStore', {
         const res = await medicalRecordService.getMedicalRecordById(id)
         if (res.success) {
           this.selectedMedicalRecord = res.data.data
+          this.medicalRecord = res.data.data
           return res
         } else {
           this.error = res?.error?.details?.error

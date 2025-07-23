@@ -3,6 +3,12 @@ export type Invoice = {
   totalAmount: number
   notes: string
   invoiceDate: string
+  appointmentDTO: {
+    id: string
+    emailReceiveInfo: string
+    phoneReceiveInfo: string
+    name: string
+  }
   method: string
   status: string
 }

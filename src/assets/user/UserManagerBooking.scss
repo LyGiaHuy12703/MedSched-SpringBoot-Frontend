@@ -1,31 +1,33 @@
 .user-manage-bookings {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Inter', sans-serif;
 
   // Hero Section
   .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 3rem 2rem;
-    margin-bottom: 2rem;
+    padding: 2.5rem 1.5rem;
+    margin-bottom: 1.5rem;
 
     .hero-content {
       max-width: 1200px;
       margin: 0 auto;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 1.5rem;
+      text-align: center;
 
       .hero-text {
         .hero-title {
-          font-size: 2.5rem;
+          font-size: clamp(1.8rem, 5vw, 2.2rem);
           font-weight: 700;
-          margin: 0 0 1rem;
+          margin: 0 0 0.75rem;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .hero-subtitle {
-          font-size: 1.125rem;
+          font-size: clamp(0.9rem, 3vw, 1rem);
           margin: 0;
           opacity: 0.9;
         }
@@ -33,19 +35,22 @@
 
       .hero-stats {
         display: flex;
-        gap: 2rem;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: center;
 
         .stat-item {
+          flex: 1 1 100px;
           text-align: center;
 
           .stat-number {
-            font-size: 2rem;
+            font-size: clamp(1.5rem, 4vw, 1.8rem);
             font-weight: 700;
             margin-bottom: 0.5rem;
           }
 
           .stat-label {
-            font-size: 0.875rem;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
             opacity: 0.8;
           }
         }
@@ -56,40 +61,40 @@
   // Stats Section
   .stats-section {
     max-width: 1200px;
-    margin: 0 auto 3rem;
-    padding: 0 2rem;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
 
       .stat-card {
         background: white;
-        border-radius: 16px;
-        padding: 2rem;
+        border-radius: 12px;
+        padding: 1.5rem;
         display: flex;
         align-items: center;
-        gap: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        gap: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         transition:
           transform 0.3s ease,
           box-shadow 0.3s ease;
 
         &:hover {
           transform: translateY(-4px);
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         }
 
         .stat-icon {
-          width: 70px;
-          height: 70px;
-          border-radius: 16px;
+          width: 50px;
+          height: 50px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
-          font-size: 1.75rem;
+          font-size: 1.5rem;
         }
 
         &.upcoming .stat-icon {
@@ -110,21 +115,20 @@
 
         .stat-content {
           .stat-number {
-            font-size: 2rem;
+            font-size: clamp(1.5rem, 4vw, 1.75rem);
             font-weight: 700;
             color: var(--va-text-primary);
             margin-bottom: 0.25rem;
           }
 
           .stat-label {
-            font-size: 1rem;
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
             font-weight: 600;
             color: var(--va-text-primary);
-            margin-bottom: 0.25rem;
           }
 
           .stat-description {
-            font-size: 0.875rem;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
             color: var(--va-text-secondary);
           }
         }
@@ -135,15 +139,15 @@
   // Upcoming Section
   .upcoming-section {
     max-width: 1200px;
-    margin: 0 auto 3rem;
-    padding: 0 2rem;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
 
     .section-header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
 
       .section-title {
-        font-size: 2rem;
+        font-size: clamp(1.5rem, 4vw, 1.8rem);
         font-weight: 700;
         color: var(--va-text-primary);
         margin: 0 0 0.5rem;
@@ -154,7 +158,7 @@
       }
 
       .section-subtitle {
-        font-size: 1rem;
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         color: var(--va-text-secondary);
         margin: 0;
       }
@@ -162,20 +166,20 @@
 
     .upcoming-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
 
       .upcoming-card {
         background: white;
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         border: 2px solid transparent;
 
         &:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
         }
 
         &.urgent {
@@ -185,19 +189,21 @@
 
         .card-header {
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
+          gap: 0.5rem;
 
           .appointment-badge {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
 
             .appointment-id {
               font-weight: 600;
               color: var(--va-primary);
-              font-size: 0.875rem;
+              font-size: clamp(0.75rem, 2vw, 0.85rem);
             }
           }
 
@@ -209,30 +215,30 @@
             color: var(--va-primary);
             background: rgba(93, 95, 239, 0.1);
             padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
+            border-radius: 16px;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
           }
         }
 
         .card-body {
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
 
           .doctor-section {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
 
             .doctor-avatar-container {
               position: relative;
 
               .doctor-avatar {
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
                 border-radius: 50%;
                 object-fit: cover;
-                border: 3px solid white;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                border: 2px solid white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
               }
 
               .doctor-rating {
@@ -242,8 +248,8 @@
                 background: #ffc107;
                 color: white;
                 padding: 0.25rem 0.5rem;
-                border-radius: 12px;
-                font-size: 0.75rem;
+                border-radius: 10px;
+                font-size: clamp(0.65rem, 1.5vw, 0.75rem);
                 font-weight: 600;
                 display: flex;
                 align-items: center;
@@ -253,21 +259,21 @@
 
             .doctor-info {
               .doctor-name {
-                font-size: 1.25rem;
+                font-size: clamp(1rem, 3vw, 1.1rem);
                 font-weight: 700;
                 margin: 0 0 0.25rem;
                 color: var(--va-text-primary);
               }
 
               .doctor-department {
-                font-size: 1rem;
+                font-size: clamp(0.85rem, 2.5vw, 0.95rem);
                 color: var(--va-primary);
                 margin: 0 0 0.25rem;
                 font-weight: 500;
               }
 
               .doctor-experience {
-                font-size: 0.875rem;
+                font-size: clamp(0.75rem, 2vw, 0.85rem);
                 color: var(--va-text-secondary);
                 margin: 0;
               }
@@ -278,14 +284,14 @@
             .detail-row {
               display: flex;
               align-items: center;
-              gap: 0.75rem;
-              margin-bottom: 0.75rem;
-              font-size: 0.875rem;
+              gap: 0.5rem;
+              margin-bottom: 0.5rem;
+              font-size: clamp(0.8rem, 2vw, 0.9rem);
               color: var(--va-text-secondary);
 
               .va-icon {
                 color: var(--va-primary);
-                font-size: 1rem;
+                font-size: 0.9rem;
               }
             }
           }
@@ -293,14 +299,10 @@
 
         .card-footer {
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: center;
-          gap: 1rem;
-
-          .action-buttons {
-            display: flex;
-            gap: 0.75rem;
-          }
+          gap: 0.75rem;
         }
       }
     }
@@ -310,16 +312,16 @@
   .filters-section {
     max-width: 1200px;
     margin: 0 auto 2rem;
-    padding: 0 2rem;
+    padding: 0 1rem;
 
     .filters-header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 1rem;
       margin-bottom: 1.5rem;
 
       .filters-title {
-        font-size: 1.75rem;
+        font-size: clamp(1.5rem, 4vw, 1.75rem);
         font-weight: 700;
         color: var(--va-text-primary);
         margin: 0;
@@ -327,14 +329,13 @@
 
       .filters-controls {
         display: flex;
-        gap: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
 
-        .search-input {
-          width: 300px;
-        }
-
+        .search-input,
         .filter-select {
-          width: 200px;
+          width: 100%;
         }
       }
     }
@@ -342,25 +343,27 @@
     .tabs-container {
       .custom-tabs {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.5rem;
         background: white;
         padding: 0.5rem;
-        border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
         .tab-button {
           background: none;
           border: none;
-          padding: 1rem 1.5rem;
+          padding: 0.75rem 1rem;
           cursor: pointer;
-          border-radius: 12px;
+          border-radius: 10px;
           transition: all 0.3s ease;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          font-size: 0.875rem;
+          gap: 0.5rem;
+          font-size: clamp(0.75rem, 2vw, 0.85rem);
           font-weight: 500;
           color: var(--va-text-secondary);
+          flex: 1 1 auto;
 
           &:hover {
             background: rgba(93, 95, 239, 0.1);
@@ -370,14 +373,14 @@
           &.active {
             background: var(--va-primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(93, 95, 239, 0.3);
+            box-shadow: 0 2px 8px rgba(93, 95, 239, 0.3);
           }
 
           .tab-count {
             background: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            font-size: clamp(0.65rem, 1.5vw, 0.75rem);
             font-weight: 600;
           }
 
@@ -393,57 +396,62 @@
   .appointments-section {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem 3rem;
+    padding: 0 1rem 2rem;
 
     .appointments-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-      gap: 2rem;
-      margin-bottom: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
 
       .appointment-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
         cursor: pointer;
         border: 2px solid transparent;
 
         &:hover {
           transform: translateY(-4px);
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
           border-color: var(--va-primary);
         }
 
         .card-header {
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
+          gap: 0.5rem;
 
           .header-left {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
 
             .appointment-id {
               font-weight: 600;
               color: var(--va-primary);
-              font-size: 0.875rem;
+              font-size:
+                clamp Holstein Neue,
+                sans-serif(0.75rem, 2vw, 0.85rem);
             }
           }
 
           .header-right {
             display: flex;
-            gap: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
 
             .appointment-date,
             .appointment-time {
               display: flex;
               align-items: center;
               gap: 0.5rem;
-              font-size: 0.875rem;
+              font-size: clamp(0.75rem, 2vw, 0.85rem);
               color: var(--va-text-secondary);
               font-weight: 500;
 
@@ -455,17 +463,17 @@
         }
 
         .card-body {
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
 
           .doctor-section {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
 
             .doctor-avatar {
-              width: 60px;
-              height: 60px;
+              width: 50px;
+              height: 50px;
               border-radius: 50%;
               object-fit: cover;
               border: 2px solid var(--va-primary);
@@ -473,28 +481,28 @@
 
             .doctor-info {
               .doctor-name {
-                font-size: 1.125rem;
+                font-size: clamp(1rem, 2.5vw, 1.1rem);
                 font-weight: 600;
                 margin: 0 0 0.25rem;
                 color: var(--va-text-primary);
               }
 
               .doctor-department {
-                font-size: 0.875rem;
+                font-size: clamp(0.8rem, 2vw, 0.9rem);
                 color: var(--va-primary);
-                margin: 0 0 0.5rem;
+                margin: 0 0 0.25rem;
                 font-weight: 500;
               }
 
               .doctor-meta {
                 display: flex;
-                gap: 1rem;
+                gap: 0.75rem;
 
                 .rating {
                   display: flex;
                   align-items: center;
                   gap: 0.25rem;
-                  font-size: 0.75rem;
+                  font-size: clamp(0.7rem, 1.5vw, 0.8rem);
                   color: var(--va-text-secondary);
 
                   .va-icon {
@@ -503,7 +511,7 @@
                 }
 
                 .experience {
-                  font-size: 0.75rem;
+                  font-size: clamp(0.7rem, 1.5vw, 0.8rem);
                   color: var(--va-text-secondary);
                 }
               }
@@ -512,8 +520,8 @@
 
           .appointment-info {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
 
             .info-item {
               display: flex;
@@ -521,13 +529,13 @@
               align-items: center;
 
               .label {
-                font-size: 0.875rem;
+                font-size: clamp(0.8rem, 2vw, 0.9rem);
                 color: var(--va-text-secondary);
                 font-weight: 500;
               }
 
               .value {
-                font-size: 0.875rem;
+                font-size: clamp(0.8rem, 2vw, 0.9rem);
                 color: var(--va-text-primary);
                 font-weight: 500;
 
@@ -542,14 +550,18 @@
 
         .card-footer {
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           align-items: center;
           padding-top: 1rem;
           border-top: 1px solid var(--va-border);
+          gap: 0.75rem;
 
           .footer-right {
             display: flex;
-            gap: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: flex-end;
           }
         }
       }
@@ -557,111 +569,96 @@
 
     .empty-state {
       text-align: center;
-      padding: 4rem 2rem;
+      padding: 3rem 1rem;
       background: white;
-      border-radius: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
       .empty-icon {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
 
         .va-icon {
-          font-size: 4rem;
+          font-size: 3rem;
           color: var(--va-text-secondary);
           opacity: 0.5;
         }
       }
 
       .empty-title {
-        font-size: 1.5rem;
+        font-size: clamp(1.25rem, 3vw, 1.5rem);
         font-weight: 600;
         color: var(--va-text-primary);
-        margin: 0 0 1rem;
+        margin: 0 0 0.75rem;
       }
 
       .empty-description {
-        font-size: 1rem;
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         color: var(--va-text-secondary);
-        margin: 0 0 2rem;
+        margin: 0 0 1.5rem;
       }
 
       .empty-action {
-        font-size: 1rem;
-        padding: 1rem 2rem;
+        font-size: clamp(0.9rem, 2.5vw, 1rem);
+        padding: 0.75rem 1.5rem;
       }
     }
 
     .pagination-container {
       display: flex;
       justify-content: center;
-      margin-top: 2rem;
-    }
-  }
-
-  // Modal Styles
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .appointment-id {
-      font-size: 1rem;
-      color: var(--va-primary);
-      font-weight: 600;
-    }
-  }
-
-  .cancel-form {
-    .cancel-warning {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      padding: 1rem;
-      background: rgba(255, 193, 7, 0.1);
-      border-radius: 8px;
-      border-left: 4px solid #ffc107;
-
-      p {
-        margin: 0;
-        color: var(--va-text-primary);
-        font-size: 1rem;
-      }
-    }
-
-    .cancel-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: flex-end;
       margin-top: 1.5rem;
     }
   }
 
+  // Appointment Detail Modal
+
+  // Feedback Form
+  .feedback-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+
+    .feedback-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--va-secondary);
+      font-size: clamp(0.8rem, 2vw, 0.9rem);
+    }
+
+    .feedback-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+  }
+
+  // Reschedule Form
   .reschedule-form {
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .reschedule-actions {
       display: flex;
-      gap: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
       justify-content: flex-end;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
     }
   }
-}
 
-// Responsive Design
-@media (max-width: 1200px) {
-  .user-manage-bookings {
+  // Responsive Design
+  @media (max-width: 1200px) {
     .hero-section .hero-content {
       flex-direction: column;
-      text-align: center;
-      gap: 2rem;
+      gap: 1.5rem;
+    }
 
-      .hero-stats {
-        justify-content: center;
-      }
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     .upcoming-grid {
@@ -672,15 +669,13 @@
       grid-template-columns: 1fr;
     }
   }
-}
 
-@media (max-width: 768px) {
-  .user-manage-bookings {
+  @media (max-width: 768px) {
     .hero-section {
       padding: 2rem 1rem;
 
       .hero-content .hero-text .hero-title {
-        font-size: 2rem;
+        font-size: clamp(1.5rem, 4vw, 1.8rem);
       }
 
       .hero-stats {
@@ -693,22 +688,15 @@
     .upcoming-section,
     .filters-section,
     .appointments-section {
-      padding: 0 1rem;
+      padding: 0 0.75rem;
     }
 
     .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
 
     .filters-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-
       .filters-controls {
-        width: 100%;
-        flex-direction: column;
-
         .search-input,
         .filter-select {
           width: 100%;
@@ -717,14 +705,20 @@
     }
 
     .custom-tabs {
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: stretch;
+
+      .tab-button {
+        width: 100%;
+        text-align: left;
+      }
     }
 
     .appointment-card {
       .card-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.5rem;
 
         .header-right {
           flex-direction: column;
@@ -732,14 +726,19 @@
         }
       }
 
-      .appointment-info {
-        grid-template-columns: 1fr;
+      .doctor-section {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+
+        .doctor-info {
+          text-align: center;
+        }
       }
 
       .card-footer {
         flex-direction: column;
         align-items: stretch;
-        gap: 1rem;
 
         .footer-right {
           justify-content: center;
@@ -747,154 +746,217 @@
       }
     }
 
-    .detail-actions {
-      flex-direction: column;
+    .appointment-detail {
+      padding: 1rem;
+
+      .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+
+        h2 {
+          font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+        }
+      }
+
+      .detail-sections {
+        .doctor-detail {
+          flex-direction: column;
+          align-items: flex-start;
+
+          .doctor-detail-avatar {
+            width: 50px;
+            height: 50px;
+          }
+        }
+      }
+
+      .detail-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        .va-button {
+          width: 100%;
+          text-align: center;
+        }
+      }
     }
 
-    .cancel-actions,
-    .reschedule-actions {
-      flex-direction: column;
-    }
+    .feedback-form,
+    .reschedule-form {
+      padding: 0.75rem;
 
-    .detail-grid {
-      grid-template-columns: 1fr !important;
+      .feedback-actions,
+      .reschedule-actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        .va-button {
+          width: 100%;
+        }
+      }
     }
   }
-}
 
-@media (max-width: 480px) {
-  .user-manage-bookings {
+  @media (max-width: 480px) {
     .stats-grid {
       grid-template-columns: 1fr;
     }
-
+    .hero-section {
+      .hero-content {
+        .hero-stats {
+          .stat-item {
+            flex: 1 1 100%;
+          }
+        }
+      }
+    }
     .upcoming-card {
-      padding: 1.5rem;
+      padding: 1rem;
 
       .doctor-section {
         flex-direction: column;
         text-align: center;
+
+        .doctor-avatar {
+          width: 50px;
+          height: 50px;
+        }
+      }
+    }
+
+    .appointment-card {
+      padding: 1rem;
+      margin-bottom: 30px;
+      .doctor-avatar {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    .appointment-detail {
+      .doctor-detail-avatar {
+        width: 40px;
+        height: 40px;
+      }
+
+      .detail-sections {
+        .section-title {
+          font-size: clamp(1rem, 2.5vw, 1.1rem);
+        }
       }
     }
   }
 }
-$primary-color: #007bff;
-$secondary-color: #6c757d;
-$success-color: #28a745;
-$warning-color: #ffc107;
-$danger-color: #dc3545;
-$info-color: #17a2b8;
-$background-color: #f8f9fa;
-$text-color: #333;
-$border-radius: 8px;
-$box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.doctor-detail {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
+  .doctor-detail-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--va-primary);
+  }
+
+  .doctor-detail-info {
+    flex: 1;
+
+    .doctor-name {
+      font-size: clamp(1rem, 2.5vw, 1.1rem);
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: var(--va-text-primary);
+    }
+
+    .doctor-department {
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      color: var(--va-secondary);
+      margin: 0 0 0.5rem;
+    }
+
+    .doctor-rating {
+      display: flex;
+      align-items: center;
+      font-size: clamp(0.8rem, 2vw, 0.9rem);
+      color: var(--va-text-primary);
+
+      .va-icon {
+        color: #ffc107;
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+.appointment-detail-modal{
+  z-index: 4;
+}
 .appointment-detail {
-  padding: 20px;
-  background: $background-color;
-  border-radius: $border-radius;
-  font-family: 'Inter', sans-serif;
-  color: $text-color;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #333;
 
   .modal-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #e0e0e0;
+    gap: 0.5rem;
 
     h2 {
-      font-size: 1.5rem;
+      font-size: clamp(1.25rem, 3vw, 1.5rem);
       font-weight: 600;
       margin: 0;
-      color: $primary-color;
+      color: var(--va-primary);
     }
 
     .appointment-id {
-      font-size: 1rem;
-      color: $secondary-color;
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      color: var(--va-secondary);
       font-weight: 500;
     }
   }
 
   .detail-sections {
-    margin-top: 20px;
+    margin-top: 1.5rem;
 
     .detail-section {
-      margin-bottom: 24px;
+      margin-bottom: 1.5rem;
 
       .section-title {
         display: flex;
         align-items: center;
-        font-size: 1.25rem;
+        font-size: clamp(1.1rem, 2.5vw, 1.25rem);
         font-weight: 600;
-        color: $text-color;
-        margin-bottom: 16px;
+        color: var(--va-text-primary);
+        margin-bottom: 1rem;
 
         .va-icon {
-          margin-right: 8px;
-          color: $primary-color;
-        }
-      }
-
-      .doctor-detail {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        background: #fff;
-        border-radius: $border-radius;
-        box-shadow: $box-shadow;
-
-        .doctor-detail-avatar {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 2px solid $primary-color;
-        }
-
-        .doctor-detail-info {
-          flex: 1;
-
-          .doctor-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 8px;
-            color: $text-color;
-          }
-
-          .doctor-department {
-            font-size: 1rem;
-            color: $secondary-color;
-            margin: 0 0 8px;
-          }
-
-          .doctor-rating {
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            color: $text-color;
-
-            .va-icon {
-              color: $warning-color;
-              margin-right: 4px;
-            }
-          }
+          margin-right: 0.5rem;
+          color: var(--va-primary);
         }
       }
 
       .appointment-detail-info {
-        padding: 16px;
+        padding: 1rem;
         background: #fff;
-        border-radius: $border-radius;
-        box-shadow: $box-shadow;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
         .detail-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 16px;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
         }
 
         .detail-item {
@@ -906,26 +968,81 @@ $box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           }
 
           .label {
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             font-weight: 500;
-            color: $secondary-color;
-            margin-bottom: 4px;
+            color: var(--va-secondary);
+            margin-bottom: 0.25rem;
           }
 
           .value {
-            font-size: 1rem;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
             font-weight: 400;
-            color: $text-color;
+            color: var(--va-text-primary);
 
             &.price {
               font-weight: 600;
-              color: $primary-color;
+              color: var(--va-primary);
             }
           }
 
           .va-badge {
-            font-size: 0.85rem;
+            font-size: clamp(0.75rem, 1.5vw, 0.85rem);
           }
+        }
+      }
+    }
+
+    .medical-record {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      .prescription-list {
+        margin-top: 1rem;
+
+        .prescription-title {
+          font-size: clamp(1rem, 2.5vw, 1.1rem);
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+
+        .prescription-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: 1px solid #e0e0e0;
+          background: #f9f9f9;
+          border-radius: 4px;
+          margin-bottom: 0.5rem;
+
+          &:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+          }
+
+          .va-list-item-label {
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            color: #333;
+
+            &.caption {
+              font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+              color: #666;
+            }
+          }
+        }
+
+        .no-prescriptions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #757575;
+          margin-top: 0.75rem;
+          padding: 0.5rem;
+          background: #f9f9f9;
+          border-radius: 4px;
+          font-size: clamp(0.8rem, 2vw, 0.9rem);
         }
       }
     }
@@ -933,93 +1050,21 @@ $box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 
   .detail-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 12px;
-    padding-top: 16px;
+    gap: 0.75rem;
+    padding-top: 1rem;
     border-top: 1px solid #e0e0e0;
 
     .va-button {
-      padding: 8px 16px;
-      font-size: 0.9rem;
-      border-radius: $border-radius;
+      padding: 0.5rem 1rem;
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      border-radius: 8px;
       transition: all 0.2s ease;
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      &[preset='info'] {
-        background: $info-color;
-        border-color: $info-color;
-      }
-
-      &[preset='danger'] {
-        background: $danger-color;
-        border-color: $danger-color;
-      }
-
-      &[preset='success'] {
-        background: $success-color;
-        border-color: $success-color;
-      }
-
-      &[preset='secondary'] {
-        background: $secondary-color;
-        border-color: $secondary-color;
-      }
-
-      .va-icon {
-        margin-right: 6px;
-      }
-    }
-  }
-}
-
-// Responsive adjustments
-@media (max-width: 768px) {
-  .appointment-detail {
-    padding: 16px;
-
-    .modal-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-
-      h2 {
-        font-size: 1.25rem;
-      }
-
-      .appointment-id {
-        font-size: 0.9rem;
-      }
-    }
-
-    .detail-sections {
-      .doctor-detail {
-        flex-direction: column;
-        align-items: flex-start;
-
-        .doctor-detail-avatar {
-          width: 60px;
-          height: 60px;
-        }
-      }
-
-      .appointment-detail-info {
-        .detail-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    }
-
-    .detail-actions {
-      flex-direction: column;
-      align-items: stretch;
-
-      .va-button {
-        width: 100%;
-        text-align: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       }
     }
   }

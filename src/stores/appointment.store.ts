@@ -1,4 +1,9 @@
-import type { Appointment } from '@/interfaces/appointment.interfaces'
+import type {
+  Appointment,
+  AppointmentRequest,
+  AppointmentResponse,
+} from '@/interfaces/appointment.interfaces'
+import type { PaymentResponseInfo } from '@/interfaces/payment.interface'
 import type {
   APIResponse,
   ClientResponse,
@@ -17,11 +22,7 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
   }),
   getters: {},
   actions: {
-    async fetchAppointmentsByDoctor(
-      page: number,
-      pageSize: number,
-      filterStatus?: string,
-    ): Promise<ClientResponse<APIResponse<Appointment[]>>> {
+    async fetchAppointmentsByDoctor(page: number, pageSize: number, filterStatus?: string) {
       this.loading = true
       this.error = null
       try {
@@ -39,15 +40,39 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
-    async fetchAppointmentsByPatient(page: number, pageSize: number) {
+    async fetchAppointmentsByPatient(
+      page: number,
+      pageSize: number,
+      sort: string[] = ['date,asc', 'time,asc'], // Tham số sort là một mảng chuỗi
+    ) {
       this.loading = true
       this.error = null
       try {
-        const res = await appointmentService.fetchAppointmentsByPatient(page, pageSize)
+        const res = await appointmentService.fetchAppointmentsByPatient(page, pageSize, sort)
         this.appointments = res.data.data.result
         this.meta = res.data.data.meta
       } catch (error) {
         this.error = error.message || 'Không thể tải danh sách cuộc hẹn của bệnh nhân.'
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchAppointmentsByShiftIds(shiftIds: string[]) {
+      if (!shiftIds || shiftIds.length === 0) {
+        this.appointments = [] // Đảm bảo là mảng
+        return
+      }
+      this.loading = true
+      this.error = null
+      try {
+        // ... gọi API ...
+        const res = await appointmentService.fetchByShiftId(shiftIds) // Giả sử hàm này tồn tại'
+        // Giả sử cấu trúc trả về là res.data.data.result
+        this.appointments = res.data.data
+      } catch (error) {
+        console.error('Lỗi trong store khi lấy lịch hẹn:', error)
+        this.appointments = [] // **QUAN TRỌNG: Gán lại mảng rỗng khi có lỗi**
+        this.error = error.message
       } finally {
         this.loading = false
       }
@@ -65,21 +90,7 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
-    async getAppointmentById(
-      id: string,
-    ): Promise<ClientResponse<APIResponse<AppointmentResponse>>> {
-      this.loading = true
-      this.error = null
-      try {
-        const res = await appointmentService.getAppointmentById(id)
-        return res
-      } catch (error) {
-        this.error = error.message || 'Không thể tải thông tin cuộc hẹn.'
-        throw new Error(this.error)
-      } finally {
-        this.loading = false
-      }
-    },
+
     async updateAppointment(
       id: string,
       request: AppointmentRequest,
@@ -105,6 +116,31 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
+    async changeStatus(
+      status: string,
+      id: string,
+    ): Promise<ClientResponse<APIResponse<Appointment>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await appointmentService.changeStatus(status, id)
+        if (res.success) {
+          const index = this.appointments.findIndex((appointment) => appointment.id === id)
+          if (index !== -1 && res.data.data) {
+            this.appointments[index] = res.data.data
+          }
+          return res
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(this.error)
+        }
+      } catch (error) {
+        this.error = error.message || 'Không thể thay đổi trạng thái cuộc hẹn.'
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
     async deleteAppointment(id: string): Promise<ClientResponse<APIResponse<string>>> {
       this.loading = true
       this.error = null
@@ -124,27 +160,25 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
-    async createAppointment(request: AppointmentRequest): Promise<string> {
+    async createAppointment(request: AppointmentRequest): Promise<PaymentResponseInfo> {
       this.loading = true
       this.error = null
       try {
-        // Giả sử appointmentService.createAppointment trả về response từ axios/fetch
         const response = await appointmentService.createAppointment(request)
-
-        const paymentInfo = response.data // Giả sử API trả về trong `data`
-
-        if (paymentInfo && paymentInfo.data?.status === 'OK' && paymentInfo.data?.url) {
-          // THAY ĐỔI 2: Trả về URL thanh toán nếu thành công
-          return paymentInfo.data.url
+        const paymentInfo = response.data
+        if (paymentInfo?.data && paymentInfo.code === 200) {
+          return {
+            message: paymentInfo.data.message,
+            paymentUrl: paymentInfo.data.paymentUrl,
+            action: paymentInfo.data.action,
+            appointmentId: paymentInfo.data.appointmentId,
+          }
         } else {
-          // Nếu backend trả về lỗi có cấu trúc
           const errorMessage = paymentInfo?.message || 'Không thể tạo yêu cầu thanh toán.'
           this.error = errorMessage
           throw new Error(errorMessage)
         }
       } catch (error: any) {
-        // THAY ĐỔI 3: Xử lý lỗi từ axios/fetch
-        // Lỗi từ backend (ví dụ 400 Bad Request) thường nằm trong error.response.data
         const backendError =
           error.response?.data?.message || error.response?.data?.error || 'Không thể tạo cuộc hẹn.'
         this.error = backendError

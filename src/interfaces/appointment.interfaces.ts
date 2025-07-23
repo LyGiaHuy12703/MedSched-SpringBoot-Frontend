@@ -1,5 +1,6 @@
 import type { DoctorShift } from './doctorShift.interfaces'
 import type { Invoice } from './invoice.interfaces'
+import type { MedicalRecord } from './medicalRecord.interfaces'
 import type { Service } from './service.interfaces'
 import type { Staff } from './staff.interface'
 import type { User } from './user.interface'
@@ -19,6 +20,7 @@ export type Appointment = {
   user: User
   reason: string
   doctorShift: DoctorShift
+  medicalRecord: MedicalRecord
   status: string
 }
 export type AppointmentRequest = {

@@ -107,7 +107,7 @@ defineProps<{
         width: 8rem; /* w-32 */
         height: 8rem; /* h-32 */
         border-radius: 9999px; /* rounded-full */
-        border: 4px solid #4fd1c5; /* border-teal-400 */
+        border: 4px solid #154EC1; /* border-teal-400 */
         object-fit: cover;
         transition: transform 0.3s ease;
 
@@ -149,10 +149,10 @@ defineProps<{
           align-items: center;
           margin-bottom: 0.5rem;
           font-weight: 600; /* font-semibold */
-          color: #2b6cb0; /* text-gray-700 */
+          color: #154EC1; /* text-gray-700 */
 
           .label-icon {
-            color: #4fd1c5; /* text-teal-500 */
+            color: #154EC1; /* text-teal-500 */
             margin-right: 0.5rem;
           }
         }

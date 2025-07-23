@@ -1,9 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { Department } from '@/interfaces/department.interface'
+import type { Staff } from '@/interfaces/staff.interface'
+import { useDepartmentStore } from '@/stores/department.store'
+import { useStaffStore } from '@/stores/staff.store'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-
+const staffStore = useStaffStore()
+const departmentStore = useDepartmentStore()
+const staffs = ref<Staff[]>([])
+const departments = ref<Department[]>([])
+onMounted(async () => {
+  await staffStore.fetchAllStaffs(0, 1000)
+  await departmentStore.fetchDepartments(0, 4)
+  staffs.value = staffStore.staffs
+  departments.value = departmentStore.departments
+})
+const sampleImages = [
+  './pexels-tara-winstead-7722680.jpg',
+  './pexels-zeynep-ozata-2153642453-32828952.jpg',
+  './pexels-mart-production-7089401.jpg',
+  './pexels-vidalbalielojrfotografia-4005611.jpg',
+]
+const topRatedDoctors = computed(() => {
+  return [...staffs.value]
+    .sort((a, b) => b.rating - a.rating) // Sắp xếp giảm dần theo rating
+    .slice(0, 3) // Lấy 3 bác sĩ đầu tiên
+})
+const departmentsWithImageAndCount = computed(() => {
+  return departments.value.map((dep, index) => ({
+    ...dep,
+    image: sampleImages[index % sampleImages.length],
+    count:
+      staffs.value.filter((staff) => staff.departments.id === dep.id).length + ' nhân viên y tế',
+  }))
+})
 const searchQuery = ref('')
 
 const features = [
@@ -29,52 +61,8 @@ const features = [
   },
 ]
 
-const specialties = [
-  {
-    image: 'https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg',
-    name: 'Tim mạch',
-    doctorCount: '15 bác sĩ',
-  },
-  {
-    image: 'https://images.pexels.com/photos/3845810/pexels-photo-3845810.jpeg',
-    name: 'Nhi khoa',
-    doctorCount: '12 bác sĩ',
-  },
-  {
-    image: 'https://images.pexels.com/photos/3845798/pexels-photo-3845798.jpeg',
-    name: 'Da liễu',
-    doctorCount: '8 bác sĩ',
-  },
-  {
-    image: 'https://images.pexels.com/photos/3845801/pexels-photo-3845801.jpeg',
-    name: 'Thần kinh',
-    doctorCount: '10 bác sĩ',
-  },
-]
-
-const doctors = [
-  {
-    image: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg',
-    name: 'BS. Nguyễn Văn A',
-    specialty: 'Tim mạch',
-    rating: 4.8,
-  },
-  {
-    image: 'https://images.pexels.com/photos/5452268/pexels-photo-5452268.jpeg',
-    name: 'BS. Trần Thị B',
-    specialty: 'Nhi khoa',
-    rating: 4.9,
-  },
-  {
-    image: 'https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg',
-    name: 'BS. Lê Văn C',
-    specialty: 'Da liễu',
-    rating: 4.7,
-  },
-]
-
 const navigateToBooking = () => {
-  router.push('/booking')
+  router.push('/bookings')
 }
 </script>
 
@@ -121,11 +109,15 @@ const navigateToBooking = () => {
       <div class="container">
         <h2 class="section-title">Chuyên khoa</h2>
         <div class="specialties-grid">
-          <div v-for="specialty in specialties" :key="specialty.name" class="specialty-card">
+          <div
+            v-for="specialty in departmentsWithImageAndCount"
+            :key="specialty.name"
+            class="specialty-card"
+          >
             <img :src="specialty.image" :alt="specialty.name" class="specialty-image" />
             <div class="specialty-info">
               <h3 class="specialty-name">{{ specialty.name }}</h3>
-              <p class="specialty-count">{{ specialty.doctorCount }}</p>
+              <p class="specialty-count">{{ specialty.count }}</p>
             </div>
           </div>
         </div>
@@ -137,11 +129,11 @@ const navigateToBooking = () => {
       <div class="container">
         <h2 class="section-title">Bác sĩ tiêu biểu</h2>
         <div class="doctors-grid">
-          <div v-for="doctor in doctors" :key="doctor.name" class="doctor-card">
-            <img :src="doctor.image" :alt="doctor.name" class="doctor-image" />
+          <div v-for="doctor in topRatedDoctors" :key="doctor.id" class="doctor-card">
+            <img :src="doctor.user.avatar" :alt="doctor.user.name" class="doctor-image" />
             <div class="doctor-info">
-              <h3 class="doctor-name">{{ doctor.name }}</h3>
-              <p class="doctor-specialty">{{ doctor.specialty }}</p>
+              <h3 class="doctor-name">{{ doctor.user.name }}</h3>
+              <p class="doctor-specialty">{{ doctor.departments.name }}</p>
               <div class="doctor-rating">
                 <va-icon name="star" color="warning" />
                 <span>{{ doctor.rating }}/5</span>
@@ -268,7 +260,7 @@ const navigateToBooking = () => {
 
       .specialty-image {
         width: 100%;
-        height: 200px;
+        aspect-ratio: 4 / 3; /* Tỷ lệ cố định để xử lý hình dài/ngắn */
         object-fit: cover;
         transition: transform 0.3s ease;
       }
@@ -313,7 +305,7 @@ const navigateToBooking = () => {
 
       .doctor-image {
         width: 100%;
-        height: 200px;
+        aspect-ratio: 1 / 1; /* Tỷ lệ vuông để hiển thị đồng đều */
         object-fit: cover;
       }
 

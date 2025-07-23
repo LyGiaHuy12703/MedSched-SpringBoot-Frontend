@@ -32,6 +32,36 @@ const staffRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/staff/medicine-dispense',
+    name: 'StaffMedicineDispense',
+    component: () => import('@/views/staff/MedicineDispense.vue'),
+    meta: {
+      layout: 'Staff',
+      requiresAuth: true,
+      allowedRoles: ['STAFF'],
+    },
+  },
+  {
+    path: '/staff/fees',
+    name: 'StaffFees',
+    component: () => import('@/views/staff/StaffInvoice.vue'),
+    meta: {
+      layout: 'Staff',
+      requiresAuth: true,
+      allowedRoles: ['STAFF'],
+    },
+  },
+  {
+    path: '/staff/patients',
+    name: 'StaffPatients',
+    component: () => import('@/views/staff/StaffPatients.vue'),
+    meta: {
+      layout: 'Staff',
+      requiresAuth: true,
+      allowedRoles: ['STAFF'],
+    },
+  },
+  {
     path: '/staff/appointments',
     name: 'StaffAppointments',
     component: () => import('@/views/staff/StaffAppointmentManage.vue'),

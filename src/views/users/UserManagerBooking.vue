@@ -6,10 +6,19 @@ import '@assets/user/UserManagerBooking.scss'
 import type { PaymentRequest } from '@/interfaces/payment.interface'
 import { usePaymentStore } from '@/stores/payment.store'
 import { toast } from 'vue3-toastify'
+import type { PatientFeedbackCreate } from '@/interfaces/patientFeedback.interfaces'
+import { usePatientFeedbackStore } from '@/stores/patientFeedback.store'
+import DeleteConfirm from '@/components/DeleteConfirm.vue'
 
 const appointmentStore = useAppointmentStore()
 const paymentStore = usePaymentStore()
+const feedbackStore = usePatientFeedbackStore()
 const appointments = ref<Appointment[]>([])
+const feedbackData = ref<PatientFeedbackCreate>({
+  feedback: '',
+  rating: 0,
+  appointmentId: '',
+})
 onMounted(async () => {
   await fetchInitData()
 })
@@ -28,7 +37,7 @@ const itemsPerPage = ref(6)
 // Modal states
 const selectedAppointment = ref<Appointment | null>(null)
 const isDetailModalOpen = ref(false)
-const isCancelModalOpen = ref(false)
+const isFeedbackModalOpen = ref(false)
 const isRescheduleModalOpen = ref(false)
 const cancelReason = ref('')
 
@@ -120,9 +129,7 @@ const filteredAppointments = computed(() => {
     result = result.filter((apt) => apt.status === filterStatus.value)
   }
 
-  return result.sort(
-    (a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime(),
-  )
+  return result
 })
 
 const paginatedAppointments = computed(() => {
@@ -138,17 +145,37 @@ const upcomingAppointments = computed(() => {
     .filter(
       (apt) =>
         ['PENDING', 'CONFIRMED'].includes(apt.status) &&
-        new Date(apt.date + ' ' + apt.time) > new Date(),
+        new Date(apt.date + ' ' + apt.time) >= new Date(),
     )
     .slice(0, 3)
 })
+const isShowDeleteModal = ref(false)
+const selectedDelete = ref('')
+function onShowDeleteModal(id: string) {
+  selectedDelete.value = id
+  isShowDeleteModal.value = true
+}
 
+function onCloseModalDelete() {
+  isShowDeleteModal.value = false
+}
+const handleDelete = async (id: string) => {
+  try {
+    await appointmentStore.deleteAppointment(id)
+    toast.success('Hủy lịch hẹn thành công')
+    isShowDeleteModal.value = false
+    fetchInitData()
+  } catch (e) {
+    toast.error('Hủy lịch hẹn thất bại')
+  }
+}
 const appointmentStats = computed(() => {
   const total = appointments.value.length
-  const pending = appointments.value.filter((apt) => apt.status === 'PENDING').length
+  const pending = appointments.value.filter((apt) => apt.status === 'PENDING_PAYMENT').length
   const confirmed = appointments.value.filter((apt) => apt.status === 'CONFIRMED').length
   const completed = appointments.value.filter((apt) => apt.status === 'COMPLETED').length
   const cancelled = appointments.value.filter((apt) => apt.status === 'CANCELLED').length
+  console.log('appointments.value', appointments.value)
   const totalSpent = appointments.value
     .filter((apt) => apt.invoice.status === 'PAID')
     .reduce((sum, apt) => sum + apt.invoice.totalAmount, 0)
@@ -198,19 +225,29 @@ const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
-const isUpcoming = (appointment: Appointment) => {
-  return new Date(appointment.date + ' ' + appointment.time) > new Date()
-}
-
 const getDaysUntilAppointment = (appointment: Appointment) => {
   const appointmentDate = new Date(appointment.date + ' ' + appointment.time)
   const now = new Date()
+
+  // Lấy ngày, tháng, năm để so sánh
+  const aptDay = appointmentDate.getDate()
+  const aptMonth = appointmentDate.getMonth()
+  const aptYear = appointmentDate.getFullYear()
+  const nowDay = now.getDate()
+  const nowMonth = now.getMonth()
+  const nowYear = now.getFullYear()
+
+  // So sánh ngày
+  if (aptYear === nowYear && aptMonth === nowMonth && aptDay === nowDay) {
+    return 'Hôm nay'
+  }
+
+  // Tính số ngày chênh lệch chính xác (bao gồm cả ngày trong tương lai)
   const diffTime = appointmentDate.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return 'Hôm nay'
   if (diffDays === 1) return 'Ngày mai'
-  if (diffDays > 1) return `${diffDays} ngày nữa`
+  if (diffDays > 1) return `${diffDays} ngày mai`
   return 'Đã qua'
 }
 
@@ -224,25 +261,20 @@ const closeAppointmentDetail = () => {
   selectedAppointment.value = null
 }
 
-const openCancelModal = (appointment: Appointment) => {
+const openHandleFeedback = (appointment: Appointment) => {
   selectedAppointment.value = appointment
-  isCancelModalOpen.value = true
+  feedbackData.value.appointmentId = appointment.id
+  isFeedbackModalOpen.value = true
   cancelReason.value = ''
 }
 
-const closeCancelModal = () => {
-  isCancelModalOpen.value = false
+const closeFeedbackModal = () => {
+  isFeedbackModalOpen.value = false
   selectedAppointment.value = null
-  cancelReason.value = ''
-}
-
-const openRescheduleModal = (appointment: Appointment) => {
-  selectedAppointment.value = appointment
-  isRescheduleModalOpen.value = true
-  rescheduleForm.value = {
-    date: appointment.date,
-    time: appointment.time,
-    reason: '',
+  feedbackData.value = {
+    feedback: '',
+    rating: 0,
+    appointmentId: '',
   }
 }
 
@@ -255,21 +287,15 @@ const closeRescheduleModal = () => {
     reason: '',
   }
 }
-
-const cancelAppointment = () => {
-  if (selectedAppointment.value && cancelReason.value.trim()) {
-    const appointment = appointments.value.find((apt) => apt.id === selectedAppointment.value!.id)
-    if (appointment) {
-      appointment.status = 'cancelled'
-      appointment.notes = `Lý do hủy: ${cancelReason.value}`
-      appointment.canCancel = false
-      appointment.canReschedule = false
-      appointment.paymentStatus = 'refunded'
-    }
-    closeCancelModal()
+const submitFeedback = async () => {
+  try {
+    await feedbackStore.addPatientFeedback(feedbackData.value)
+    toast.success('Gửi đánh giá thành công!')
+    closeFeedbackModal()
+  } catch (error: any) {
+    toast.error(error.message || 'Gửi đánh giá thất bại.')
   }
 }
-
 const rescheduleAppointment = () => {
   if (selectedAppointment.value && rescheduleForm.value.date && rescheduleForm.value.time) {
     const appointment = appointments.value.find((apt) => apt.id === selectedAppointment.value!.id)
@@ -409,7 +435,7 @@ const handlePayment = async (amount: number, appointment: string) => {
                 <va-badge :color="getStatusColor(appointment.status)" class="status-badge">
                   {{ getStatusText(appointment.status) }}
                 </va-badge>
-                <span class="appointment-id">#{{ appointment.id }}</span>
+                <!-- <span class="appointment-id">#{{ appointment.id }}</span> -->
               </div>
               <div class="countdown">
                 <va-icon name="access_time" />
@@ -463,26 +489,6 @@ const handlePayment = async (amount: number, appointment: string) => {
                 <va-icon name="visibility" />
                 Xem chi tiết
               </va-button>
-              <div class="action-buttons">
-                <va-button
-                  v-if="new Date(appointment.date + ' ' + appointment.time) > new Date()"
-                  preset="secondary"
-                  size="small"
-                  @click="openRescheduleModal(appointment)"
-                >
-                  <va-icon name="edit_calendar" />
-                  Đổi lịch
-                </va-button>
-                <va-button
-                  v-if="appointment.date"
-                  preset="danger"
-                  size="small"
-                  @click="openCancelModal(appointment)"
-                >
-                  <va-icon name="cancel" />
-                  Hủy
-                </va-button>
-              </div>
             </div>
           </div>
         </div>
@@ -492,27 +498,7 @@ const handlePayment = async (amount: number, appointment: string) => {
       <div class="filters-section">
         <div class="filters-header">
           <h2 class="filters-title">Tất cả lịch khám</h2>
-          <div class="filters-controls">
-            <va-input
-              v-model="searchQuery"
-              placeholder="Tìm kiếm lịch khám..."
-              class="search-input"
-            >
-              <template #prepend>
-                <va-icon name="search" />
-              </template>
-            </va-input>
-
-            <va-select
-              v-model="filterStatus"
-              placeholder="Lọc theo trạng thái"
-              :options="statusOptions"
-              text-by="text"
-              value-by="value"
-              clearable
-              class="filter-select"
-            />
-          </div>
+          <div class="filters-controls"></div>
         </div>
 
         <div class="tabs-container">
@@ -542,7 +528,6 @@ const handlePayment = async (amount: number, appointment: string) => {
           >
             <div class="card-header">
               <div class="header-left">
-                <!-- <span class="appointment-id">#{{ appointment.id }}</span> -->
                 <va-badge :color="getStatusColor(appointment.status)">
                   {{ getStatusText(appointment.status) }}
                 </va-badge>
@@ -568,7 +553,7 @@ const handlePayment = async (amount: number, appointment: string) => {
                 />
                 <div class="doctor-info">
                   <h3 class="doctor-name">{{ appointment.staff.user.name }}</h3>
-                  <p class="doctor-department">{{ appointment.staff.department }}</p>
+                  <p class="doctor-department">{{ appointment.staff.departments.name }}</p>
                   <div class="doctor-meta">
                     <span class="rating">
                       <va-icon name="star" />
@@ -582,7 +567,9 @@ const handlePayment = async (amount: number, appointment: string) => {
               <div class="appointment-info">
                 <div class="info-item">
                   <span class="label">Loại khám:</span>
-                  <span class="value">{{ appointment.type }}</span>
+                  <span class="value">{{
+                    appointment.services.map((ser) => ser.name).join(',')
+                  }}</span>
                 </div>
                 <div class="info-item">
                   <span class="label">Lý do:</span>
@@ -626,31 +613,31 @@ const handlePayment = async (amount: number, appointment: string) => {
               </div>
               <div class="footer-right">
                 <va-button
+                  v-if="
+                    getDaysUntilAppointment(appointment) !== 'Hôm nay' &&
+                    appointment.status !== 'CANCELLED'
+                  "
+                  @click="onShowDeleteModal(appointment.id)"
+                  >Hủy</va-button
+                >
+
+                <va-button
                   preset="primary"
                   v-if="
-                    appointment.invoice.status === 'PENDING_PAYMENT' ||
-                    appointment.invoice.status === 'UNPAID'
+                    appointment.invoice.status === 'UNPAID' && appointment.status !== 'CANCELLED'
                   "
                   @click="handlePayment(appointment.invoice.totalAmount, appointment.id)"
                 >
                   Thanh toán
                 </va-button>
-                <!-- <va-button
-                v-if="appointment.canReschedule && isUpcoming(appointment)"
-                preset="secondary"
-                size="small"
-                @click="openRescheduleModal(appointment)"
-              >
-                Đổi lịch
-              </va-button>
-              <va-button
-                v-if="appointment.canCancel && isUpcoming(appointment)"
-                preset="danger"
-                size="small"
-                @click="openCancelModal(appointment)"
-              >
-                Hủy
-              </va-button> -->
+
+                <va-button
+                  v-if="appointment.status === 'COMPLETED'"
+                  preset="danger"
+                  @click="openHandleFeedback(appointment)"
+                >
+                  Đánh giá
+                </va-button>
               </div>
             </div>
           </div>
@@ -675,15 +662,16 @@ const handlePayment = async (amount: number, appointment: string) => {
         </div>
       </div>
 
-      <!-- Detail Modal -->
       <va-modal
         v-model="isDetailModalOpen"
         hide-default-actions
         size="large"
+        class="appointment-detail-modal"
         @close="closeAppointmentDetail"
       >
         <div v-if="selectedAppointment" class="appointment-detail">
           <div class="detail-sections">
+            <!-- Thông tin bác sĩ -->
             <div class="detail-section">
               <h4 class="section-title">
                 <va-icon name="person" />
@@ -691,7 +679,7 @@ const handlePayment = async (amount: number, appointment: string) => {
               </h4>
               <div class="doctor-detail">
                 <img
-                  :src="selectedAppointment.staff.user.avatar"
+                  :src="selectedAppointment.staff.user.avatar || '/defaultAvatar.png'"
                   :alt="selectedAppointment.staff.user.name"
                   class="doctor-detail-avatar"
                 />
@@ -709,6 +697,7 @@ const handlePayment = async (amount: number, appointment: string) => {
               </div>
             </div>
 
+            <!-- Thông tin lịch khám -->
             <div class="detail-section">
               <h4 class="section-title">
                 <va-icon name="event" />
@@ -774,26 +763,72 @@ const handlePayment = async (amount: number, appointment: string) => {
                 </div>
               </div>
             </div>
+
+            <!-- Thông tin hồ sơ bệnh án -->
+            <div v-if="selectedAppointment.medicalRecord" class="detail-section">
+              <h4 class="section-title">
+                <va-icon name="medical_services" />
+                Hồ sơ bệnh án
+              </h4>
+              <va-card>
+                <va-card-content>
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <span class="label">Chẩn đoán:</span>
+                      <span class="value">{{ selectedAppointment.medicalRecord.diagnosis }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="label">Hướng điều trị:</span>
+                      <span class="value">{{ selectedAppointment.medicalRecord.treatment }}</span>
+                    </div>
+                    <div
+                      v-if="selectedAppointment.medicalRecord.notes"
+                      class="detail-item full-width"
+                    >
+                      <span class="label">Ghi chú:</span>
+                      <span class="value">{{ selectedAppointment.medicalRecord.notes }}</span>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="selectedAppointment.medicalRecord.prescriptions.length > 0"
+                    class="prescription-list"
+                  >
+                    <h5 class="prescription-title">Đơn thuốc</h5>
+                    <va-list>
+                      <va-list-item
+                        v-for="(prescription, index) in selectedAppointment.medicalRecord
+                          .prescriptions"
+                        :key="index"
+                        class="prescription-item"
+                      >
+                        <va-list-item-section>
+                          <va-list-item-label>
+                            {{ prescription.medicationName }}
+                          </va-list-item-label>
+                          <va-list-item-label caption>
+                            Số lượng: {{ prescription.quantity }} | Liều dùng:
+                            {{ prescription.dosage }}
+                          </va-list-item-label>
+                        </va-list-item-section>
+                      </va-list-item>
+                    </va-list>
+                  </div>
+                  <div v-else class="no-prescriptions">
+                    <va-icon name="info" color="secondary" />
+                    <span>Không có đơn thuốc.</span>
+                  </div>
+                </va-card-content>
+              </va-card>
+            </div>
           </div>
 
           <div class="detail-actions">
             <va-button
-              v-if="selectedAppointment.canReschedule && isUpcoming(selectedAppointment)"
-              preset="info"
-              @click="openRescheduleModal(selectedAppointment)"
+              v-if="selectedAppointment.status === 'PAYMENT_PENDING'"
+              preset="success"
+              @click="handlePayment"
             >
-              <va-icon name="edit_calendar" />
-              Đổi lịch khám
-            </va-button>
-            <va-button
-              v-if="selectedAppointment.canCancel && isUpcoming(selectedAppointment)"
-              preset="danger"
-              @click="openCancelModal(selectedAppointment)"
-            >
-              <va-icon name="cancel" />
-              Hủy lịch khám
-            </va-button>
-            <va-button v-if="selectedAppointment.paymentStatus === 'pending'" preset="success">
               <va-icon name="payment" />
               Thanh toán
             </va-button>
@@ -805,34 +840,48 @@ const handlePayment = async (amount: number, appointment: string) => {
         </div>
       </va-modal>
 
-      <!-- Cancel Modal -->
-      <va-modal v-model="isCancelModalOpen" size="small" @close="closeCancelModal">
+      <!-- Feedback Modal -->
+      <va-modal
+        v-model="isFeedbackModalOpen"
+        size="small"
+        @close="closeFeedbackModal"
+        hide-default-actions
+      >
         <template #header>
-          <h2>Hủy lịch khám</h2>
+          <h2 class="va-h4 items-center">
+            <va-icon name="feedback" class="mr-2" />
+            Gửi đánh giá lịch hẹn
+          </h2>
         </template>
 
-        <div class="cancel-form">
-          <div class="cancel-warning">
-            <va-icon name="warning" color="warning" />
-            <p>
-              Bạn có chắc chắn muốn hủy lịch khám này không? Phí khám sẽ được hoàn lại trong vòng
-              3-5 ngày làm việc.
-            </p>
+        <div class="feedback-form">
+          <div class="feedback-info">
+            <va-icon name="info" color="info" />
+            <p>Vui lòng gửi đánh giá và đánh giá của bạn về lịch hẹn này.</p>
           </div>
-
-          <va-input
-            v-model="cancelReason"
-            type="textarea"
-            label="Lý do hủy (bắt buộc)"
-            placeholder="Vui lòng cho biết lý do hủy lịch khám..."
-            rows="3"
-            required
+          <va-rating
+            v-model="feedbackData.rating"
+            :max="5"
+            label="Đánh giá"
+            :rules="[(v) => v > 0 || 'Vui lòng chọn số sao đánh giá']"
+            required-mark
+          />
+          <va-textarea
+            v-model="feedbackData.feedback"
+            placeholder="Vui lòng nhập đánh giá của bạn..."
+            rows="4"
+            :rules="[(v) => !!v.trim() || 'đánh giá là bắt buộc']"
+            required-mark
           />
 
-          <div class="cancel-actions">
-            <va-button preset="secondary" @click="closeCancelModal"> Không hủy </va-button>
-            <va-button preset="danger" :disabled="!cancelReason.trim()" @click="cancelAppointment">
-              Xác nhận hủy
+          <div class="feedback-actions">
+            <va-button preset="secondary" @click="closeFeedbackModal">Hủy</va-button>
+            <va-button
+              preset="primary"
+              :disabled="!feedbackData.feedback.trim() || feedbackData.rating === 0"
+              @click="submitFeedback"
+            >
+              Gửi đánh giá
             </va-button>
           </div>
         </div>
@@ -880,6 +929,14 @@ const handlePayment = async (amount: number, appointment: string) => {
             </va-button>
           </div>
         </div>
+      </va-modal>
+      <va-modal v-model="isShowDeleteModal" hide-default-actions @close="onCloseModalDelete">
+        <DeleteConfirm
+          title="Cảnh báo hủy lịch hẹn"
+          message="Bạn có chắc chắn muốn hủy lịch hẹn không?"
+          @confirm="handleDelete(selectedDelete)"
+          @close-confirm="onCloseModalDelete"
+        />
       </va-modal>
     </div>
   </va-inner-loading>
