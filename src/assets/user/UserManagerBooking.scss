@@ -5,8 +5,8 @@
 
   // Hero Section
   .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, rgba(93, 95, 239, 0.2), rgba(93, 95, 239, 0.05));
+    color: var(--va-primary);
     padding: 2.5rem 1.5rem;
     margin-bottom: 1.5rem;
 
@@ -149,7 +149,7 @@
       .section-title {
         font-size: clamp(1.5rem, 4vw, 1.8rem);
         font-weight: 700;
-        color: var(--va-text-primary);
+        color: var(--va-primary);
         margin: 0 0 0.5rem;
         display: flex;
         align-items: center;
@@ -159,7 +159,7 @@
 
       .section-subtitle {
         font-size: clamp(0.85rem, 2.5vw, 0.95rem);
-        color: var(--va-text-secondary);
+        color: var(--va-primary);
         margin: 0;
       }
     }
@@ -894,7 +894,7 @@
     }
   }
 }
-.appointment-detail-modal{
+.appointment-detail-modal {
   z-index: 4;
 }
 .appointment-detail {

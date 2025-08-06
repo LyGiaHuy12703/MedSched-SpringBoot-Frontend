@@ -110,7 +110,6 @@ const props = defineProps<{
   staffData: Staff
 }>()
 const staffData = props.staffData
-console.log({ staffData })
 </script>
 <style scoped lang="scss">
 .detail-user {

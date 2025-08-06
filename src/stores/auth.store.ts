@@ -65,7 +65,7 @@ export const useAuthStore = defineStore('auth', {
 
         if (this.account?.user?.role) {
           userStore.setUser({
-            role: this.account.user.role,
+            role: this.account.user.role[0].name,
             token,
           })
         }
@@ -154,7 +154,6 @@ export const useAuthStore = defineStore('auth', {
           access_token: accessToken,
           refresh_token: refreshToken,
         }
-        console.log({ authData })
 
         authService.updateLocalStorage(authData)
       } catch (error) {

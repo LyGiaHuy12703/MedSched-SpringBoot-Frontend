@@ -1,51 +1,42 @@
+```vue
 <template>
   <div class="role-detail">
-    <va-card stripe stripe-color="primary">
+    <va-card stripe stripe-color="primary" class="medicine-card">
       <va-card-title class="header flex items-center gap-1">
-        <div class="header">
+        <div class="header-content">
           <va-icon name="shield" color="primary" class="mr-2" />
-          <h1 class="va-h6">Chi tiết vai trò</h1>
+          <h1 class="va-h4">Chi tiết vai trò</h1>
         </div>
-        <div class="header chip-status">
-          <VaChip v-if="roleDetail.active" color="success"><va-icon name="check" />Active</VaChip>
-          <VaChip v-else color="danger"> <va-icon name="close" />InActive</VaChip>
+        <div class="chip-status">
+          <va-chip v-if="roleDetail.active" color="success" size="small">
+            <va-icon name="check" class="mr-1" />Active
+          </va-chip>
+          <va-chip v-else color="danger" size="small">
+            <va-icon name="close" class="mr-1" />InActive
+          </va-chip>
         </div>
       </va-card-title>
       <va-card-content class="content">
-        <div v-if="roleDetail" class="detail-grid mb-3">
-          <div class="detail-item">
-            <div class="label">
-              <VaIcon name="fingerprint" size="small" class="mr-1" />
-              ID
-            </div>
-            <VaChip color="primary" outline size="large" class="value">
+        <div v-if="roleDetail" class="add-grid mb-3">
+          <div class="add-item">
+            <div class="label"><va-icon name="fingerprint" size="small" class="mr-1" /> ID</div>
+            <va-chip color="primary" outline size="large" class="value">
               {{ roleDetail.id }}
-            </VaChip>
+            </va-chip>
           </div>
         </div>
-        <div v-if="roleDetail" class="detail-grid mb-3">
-          <div class="detail-item">
-            <div class="label">
-              <VaIcon name="tag" size="small" class="mr-1" />
-              Tên vai trò
-            </div>
-            {{ roleDetail.name }}
+        <div v-if="roleDetail" class="add-grid mb-3">
+          <div class="add-item">
+            <div class="label"><va-icon name="tag" size="small" class="mr-1" /> Tên vai trò</div>
+            <p class="value-text">{{ roleDetail.name }}</p>
           </div>
-          <div class="detail-item">
-            <div class="label">
-              <VaIcon name="va-arrow-down" size="small" class="mr-1" />
-              Mô tả
-            </div>
-            {{ roleDetail.description }}
+          <div class="add-item">
+            <div class="label"><va-icon name="description" size="small" class="mr-1" /> Mô tả</div>
+            <p class="value-text">{{ roleDetail.description }}</p>
           </div>
         </div>
-        <div class="detail-item mb-3">
-          <div class="label">
-            <VaIcon name="lock" size="small" class="mr-2" />
-            Quyền hạn
-          </div>
-
-          <!-- Danh sách quyền hạn -->
+        <div class="add-item permission-item mb-3">
+          <div class="label"><va-icon name="lock" size="small" class="mr-1" /> Quyền hạn</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
             <div
               v-for="(permission, index) in visiblePermissions"
@@ -55,29 +46,21 @@
               {{ permission.name || permission }}
             </div>
           </div>
-          <!-- <va-data-table
-            :columns="columns"
-            :items="roleDetail.permissions"
-            item-size="1"
-            class="mt-3"
-          ></va-data-table> -->
-
-          <!-- Nút xem thêm / ẩn bớt -->
           <div v-if="(roleDetail?.permissions?.length ?? 0) > 6" class="mt-3">
-            <button class="text-blue-600 hover:underline text-sm" @click="toggleShow">
+            <va-button
+              preset="plain"
+              class="text-blue-600 hover:underline text-sm"
+              size="small"
+              @click="toggleShow"
+            >
               {{ showAll ? 'Ẩn bớt' : 'Xem thêm' }}
-            </button>
+            </va-button>
           </div>
         </div>
-
-        <!-- Users -->
-        <div class="detail-item">
+        <div class="add-item permission-item">
           <div class="label">
-            <VaIcon name="people" size="small" class="mr-2" />
-            Danh sách người dùng
+            <va-icon name="people" size="small" class="mr-1" /> Danh sách người dùng
           </div>
-
-          <!-- Danh sách user -->
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
             <div
               v-for="(user, index) in visibleUsers"
@@ -88,24 +71,27 @@
               <div class="text-gray-500 text-xs">{{ user.email }}</div>
             </div>
           </div>
-
-          <!-- Nút xem thêm / ẩn bớt -->
           <div v-if="(roleDetail.users?.length ?? 0) > 6" class="mt-3">
-            <button class="text-blue-600 hover:underline text-sm" @click="toggleUsers">
+            <va-button
+              preset="plain"
+              class="text-blue-600 hover:underline text-sm"
+              size="small"
+              @click="toggleUsers"
+            >
               {{ showAllUsers ? 'Ẩn bớt' : 'Xem thêm' }}
-            </button>
+            </va-button>
           </div>
         </div>
       </va-card-content>
-      <va-card-actions align="right" class="actions">
-        <VaButton color="secondary" outline @click="$emit('close-modal')">
-          <VaIcon name="close" class="mr-2" />
+      <va-card-actions class="actions">
+        <va-button @click="$emit('close-modal')" color="secondary" class="action-button">
           Đóng
-        </VaButton>
+        </va-button>
       </va-card-actions>
     </va-card>
   </div>
 </template>
+
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Role } from '@/interfaces/role.interface'
@@ -117,28 +103,7 @@ const roleDetail = props.roleDetail
 
 const showAll = ref(false)
 const showAllUsers = ref(false)
-// const columns = [
-//   {
-//     text: 'Id',
-//     key: 'id',
-//     field: 'id',
-//   },
-//   {
-//     text: 'Name',
-//     key: 'name',
-//     field: 'name',
-//   },
-//   {
-//     text: 'Module',
-//     key: 'module',
-//     field: 'module',
-//   },
-//   {
-//     text: 'ApiPath',
-//     key: 'apiPath',
-//     field: 'apiPath',
-//   },
-// ]
+
 const visiblePermissions = computed(() => {
   if (showAll.value) return roleDetail.permissions
   return (roleDetail?.permissions ?? []).slice(0, 6)
@@ -147,6 +112,7 @@ const visiblePermissions = computed(() => {
 const toggleShow = () => {
   showAll.value = !showAll.value
 }
+
 const visibleUsers = computed(() => {
   if (showAllUsers.value) return roleDetail.users
   return (roleDetail.users ?? []).slice(0, 6)
@@ -156,39 +122,59 @@ const toggleUsers = () => {
   showAllUsers.value = !showAllUsers.value
 }
 </script>
+
 <style scoped lang="scss">
 .role-detail {
   padding: 1.5rem;
 
+  .medicine-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    min-width: 600px;
+    max-width: 900px;
+    margin: 0 auto;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
   .header {
     display: flex;
     align-items: center;
-    padding-bottom: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--va-background-border);
   }
+
   .chip-status {
     display: flex;
     justify-content: end;
+    flex-grow: 1;
   }
 
-  .detail-grid {
+  .content {
+    padding: 1.5rem;
+  }
+
+  .add-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
   }
 
-  .detail-item {
+  .add-item {
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border-radius: 8px;
-    background: var(--va-background-element);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    border-radius: 6px;
+    background: var(--va-background-secondary);
+    border: 1px solid var(--va-background-border);
+    transition: background-color 0.2s ease;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--va-box-shadow);
+      background: var(--va-background-element);
     }
 
     .label {
@@ -199,19 +185,72 @@ const toggleUsers = () => {
       margin-bottom: 0.5rem;
     }
 
-    .value {
-      font-size: 1rem;
+    .value-text {
+      font-size: 0.9rem;
       color: var(--va-text-primary);
+      margin: 0;
+      padding: 0.25rem 0;
+      word-break: break-word;
     }
   }
 
-  .no-data {
-    text-align: center;
-    padding: 2rem;
+  .permission-item {
+    grid-column: span 2;
   }
 
   .actions {
+    display: flex;
+    justify-content: flex-end;
     padding: 1rem 1.5rem;
+    border-top: 1px solid var(--va-background-border);
+
+    .action-button {
+      font-weight: 500;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .add-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .add-item {
+      padding: 0.75rem;
+    }
+
+    .permission-item {
+      grid-column: span 1;
+    }
+
+    .actions {
+      flex-direction: column;
+
+      .action-button {
+        width: 100%;
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &:first-child {
+          margin-left: 0;
+        }
+      }
+    }
+
+    .medicine-card {
+      min-width: 100%;
+      max-width: 100%;
+      margin: 0;
+    }
   }
 }
 </style>

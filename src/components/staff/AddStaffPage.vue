@@ -80,7 +80,6 @@ const handleCancel = () => {
   router.back()
 }
 const handleImageUpload = (files: File[]) => {
-  console.log({ files })
   if (files.length > 0) {
     formData.value.avatar = files[0]
     const reader = new FileReader()

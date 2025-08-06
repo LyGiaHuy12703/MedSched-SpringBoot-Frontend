@@ -23,6 +23,9 @@ const medicalRecordService = {
   ): Promise<ClientResponse<APIResponse<MedicalRecord>>> {
     return await apiClient.put(`/medicalRecords/${id}`, request)
   },
+  async updateMedicalRecordStatus(id: string): Promise<ClientResponse<APIResponse<MedicalRecord>>> {
+    return await apiClient.put(`/medicalRecords/${id}/status`)
+  },
   async deleteMedicalRecord(id: string): Promise<ClientResponse<APIResponse<string>>> {
     return await apiClient.delete(`/medicalRecords/${id}`)
   },

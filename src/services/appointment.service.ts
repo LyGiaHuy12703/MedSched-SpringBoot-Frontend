@@ -12,12 +12,16 @@ const appointmentService = {
     page: number,
     size: number,
     status?: string,
+    date?: string,
   ): Promise<ClientResponse<APIResponse<Appointment[]>>> {
     return await apiClient.get('appointments/staff', {
       params: {
         page: page,
         size: size,
         ...(status ? { filter: `status~'${status}'` } : {}),
+        ...(date
+          ? { filter: `${status ? 'status~' + status + ' and ' : ''}doctorShift.dayWork~'${date}'` }
+          : {}),
       },
     })
   },
@@ -60,7 +64,7 @@ const appointmentService = {
       params: {
         page: page,
         size: size,
-        ...(filter ? { filter: filter } : {}),
+        ...(filter ? { filter: `status~'${filter}'` } : {}),
       },
     })
   },

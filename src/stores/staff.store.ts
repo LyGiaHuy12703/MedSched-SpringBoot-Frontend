@@ -28,7 +28,13 @@ export const useStaffStore = defineStore('staff', {
       this.staff = null
       this.lastUpdated = null
     },
-    async fetchAllStaffs(page: number, size: number, departmentId?: string, search?: string) {
+    async fetchAllStaffs(
+      page: number,
+      size: number,
+      departmentId?: string,
+      search?: string,
+      role?: string,
+    ) {
       const escapeSearch = (value: string): string => {
         return value.replace(/'/g, "\\'").replace(/\|/g, '\\|')
       }
@@ -38,7 +44,7 @@ export const useStaffStore = defineStore('staff', {
         const filter = search
           ? `(user.name ~ '${escapeSearch(search)}' or user.email ~ '${escapeSearch(search)}' or id ~ '${escapeSearch(search)}')`
           : undefined
-        const res = await staffService.fetchAll(page, size, departmentId, filter)
+        const res = await staffService.fetchAll(page, size, departmentId, filter, role)
         this.staffs = res.data.data.result
         this.meta = res.data.data.meta
       } catch (error: any) {
@@ -64,7 +70,6 @@ export const useStaffStore = defineStore('staff', {
       } catch (error) {
         throw new Error(this.error)
       } finally {
-        console.log('staff', this.staff)
         this.loading = false
       }
     },
@@ -94,7 +99,6 @@ export const useStaffStore = defineStore('staff', {
     ): Promise<ClientResponse<APIResponse<Staff>>> {
       this.loading = true
       this.error = null
-      console.log({ staff })
 
       try {
         const res = await staffService.updateData(id, staff)

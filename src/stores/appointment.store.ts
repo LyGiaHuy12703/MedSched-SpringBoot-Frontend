@@ -22,16 +22,26 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
   }),
   getters: {},
   actions: {
-    async fetchAppointmentsByDoctor(page: number, pageSize: number, filterStatus?: string) {
+    async fetchAppointmentsByDoctor(
+      page: number,
+      pageSize: number,
+      filterStatus?: string,
+      date?: string,
+    ) {
       this.loading = true
       this.error = null
       try {
-        const res = await appointmentService.fetchAppointmentsByDoctor(page, pageSize, filterStatus)
+        const res = await appointmentService.fetchAppointmentsByDoctor(
+          page,
+          pageSize,
+          filterStatus,
+          date,
+        )
         if (res.success) {
           this.appointments = res.data.data.result
           this.meta = res.data.data.meta
         } else {
-          this.error = res?.error?.details?.error
+          this.error = res?.error?.details?.error || 'Lỗi không xác định'
           throw new Error(this.error)
         }
       } catch (error) {
@@ -77,15 +87,20 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         this.loading = false
       }
     },
-    async fetchAllAppointments(page: number, pageSize: number) {
+    async fetchAllAppointments(page: number, pageSize: number, filterStatus?: string) {
       this.loading = true
       this.error = null
       try {
-        const res = await appointmentService.fetchAllAppointments(page, pageSize)
-        this.appointments = res.data.data.result
-        this.meta = res.data.data.meta
+        const res = await appointmentService.fetchAllAppointments(page, pageSize, filterStatus)
+        if (res.success) {
+          this.appointments = res.data.data.result
+          this.meta = res.data.data.meta
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(this.error)
+        }
       } catch (error) {
-        this.error = error.message || 'Không thể tải danh sách cuộc hẹn.'
+        this.error = error.message || 'Không thể tải danh sách cuộc hẹn của bác sĩ.'
       } finally {
         this.loading = false
       }
@@ -111,7 +126,6 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
         }
       } catch (error) {
         this.error = error.message || 'Không thể cập nhật cuộc hẹn.'
-        throw new Error(this.error)
       } finally {
         this.loading = false
       }
@@ -165,22 +179,23 @@ export const useAppointmentStore = defineStore('useAppointmentStore', {
       this.error = null
       try {
         const response = await appointmentService.createAppointment(request)
-        const paymentInfo = response.data
-        if (paymentInfo?.data && paymentInfo.code === 200) {
+        const paymentInfo = response
+        if (paymentInfo?.data && paymentInfo.data.code === 200 && paymentInfo.data.data) {
           return {
             message: paymentInfo.data.message,
-            paymentUrl: paymentInfo.data.paymentUrl,
-            action: paymentInfo.data.action,
-            appointmentId: paymentInfo.data.appointmentId,
+            paymentUrl: paymentInfo.data.data.paymentUrl,
+            action: paymentInfo.data.data.action,
+            appointmentId: paymentInfo.data.data.appointmentId,
           }
         } else {
-          const errorMessage = paymentInfo?.message || 'Không thể tạo yêu cầu thanh toán.'
+          const errorMessage =
+            paymentInfo.error?.details?.error || 'Không thể tạo yêu cầu thanh toán.'
           this.error = errorMessage
           throw new Error(errorMessage)
         }
       } catch (error: any) {
-        const backendError =
-          error.response?.data?.message || error.response?.data?.error || 'Không thể tạo cuộc hẹn.'
+        console.error('Error in createAppointment:', error)
+        const backendError = error.error?.details?.error || error || 'Không thể tạo cuộc hẹn.'
         this.error = backendError
         throw new Error(backendError)
       } finally {

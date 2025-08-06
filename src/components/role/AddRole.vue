@@ -1,35 +1,42 @@
+```vue
 <template>
   <div class="role-add">
-    <VaCard stripe stripe-color="primary">
-      <VaCardTitle class="header">
-        <VaIcon name="shield" color="primary" class="mr-2" />
+    <va-card stripe stripe-color="primary" class="medicine-card">
+      <va-card-title class="header">
+        <va-icon name="shield" color="primary" class="mr-2" />
         <h1 class="va-h4">Thêm vai trò</h1>
-      </VaCardTitle>
-      <VaCardContent class="content">
-        <VaForm ref="formRef" class="form-group">
+      </va-card-title>
+      <va-card-content class="content">
+        <va-form ref="formRef" class="form-group">
           <div class="add-grid">
             <div class="add-item">
-              <div class="label"><VaIcon name="tag" size="small" class="mr-1" /> Tên vai trò</div>
-              <VaInput
+              <div class="label"><va-icon name="tag" size="small" class="mr-1" /> Tên vai trò</div>
+              <va-input
                 v-model="roleData.name"
                 placeholder="Nhập tên vai trò"
                 :rules="[(v) => !!v || 'Tên vai trò là bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
             <div class="add-item">
-              <div class="label"><VaIcon name="description" size="small" class="mr-1" /> Mô tả</div>
-              <VaInput
+              <div class="label">
+                <va-icon name="description" size="small" class="mr-1" /> Mô tả
+              </div>
+              <va-input
                 v-model="roleData.description"
                 placeholder="Nhập mô tả vai trò"
                 :rules="[(v) => !!v || 'Mô tả là bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
             <div class="add-item permission-item">
               <div class="label">
-                <VaIcon name="lock" size="small" class="mr-1" /> Quyền hạn
-                <VaButton
+                <va-icon name="lock" size="small" class="mr-1" /> Quyền hạn
+                <va-button
                   preset="plain"
                   class="ml-3"
                   size="small"
@@ -37,9 +44,9 @@
                   @click="clearPermissions"
                 >
                   Xóa tất cả
-                </VaButton>
+                </va-button>
               </div>
-              <VaSelect
+              <va-select
                 v-model="roleData.permissions"
                 :options="
                   permissionOptions.map((permission) => ({
@@ -59,16 +66,20 @@
                 searchable
                 value-by="value"
                 text-by="text"
+                class="select-field"
+                dense
               />
             </div>
           </div>
-        </VaForm>
-      </VaCardContent>
-      <VaCardActions class="actions">
-        <VaButton @click="onSave" color="primary">Lưu</VaButton>
-        <VaButton @click="$emit('close-modal')" color="secondary">Hủy</VaButton>
-      </VaCardActions>
-    </VaCard>
+        </va-form>
+      </va-card-content>
+      <va-card-actions class="actions">
+        <va-button @click="onSave" color="primary" class="action-button">Lưu</va-button>
+        <va-button @click="$emit('close-modal')" color="secondary" class="action-button"
+          >Hủy</va-button
+        >
+      </va-card-actions>
+    </va-card>
   </div>
 </template>
 
@@ -115,10 +126,25 @@ const clearPermissions = () => {
 .role-add {
   padding: 1.5rem;
 
+  .medicine-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    min-width: 600px;
+    max-width: 900px;
+    margin: 0 auto;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
   .header {
     display: flex;
     align-items: center;
-    padding-bottom: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--va-background-border);
   }
 
   .content {
@@ -135,15 +161,13 @@ const clearPermissions = () => {
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border-radius: 8px;
-    background: var(--va-background-element);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    border-radius: 6px;
+    background: var(--va-background-secondary);
+    border: 1px solid var(--va-background-border);
+    transition: background-color 0.2s ease;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--va-box-shadow);
+      background: var(--va-background-element);
     }
 
     .label {
@@ -153,14 +177,73 @@ const clearPermissions = () => {
       color: var(--va-primary);
       margin-bottom: 0.5rem;
     }
+
+    .input-field,
+    .select-field {
+      border-radius: 4px;
+      border: 1px solid var(--va-background-border);
+      transition: border-color 0.2s ease;
+
+      &:focus-within {
+        border-color: var(--va-primary);
+      }
+    }
   }
 
   .permission-item {
-    grid-column: span 2; /* Permissions field spans two columns for more space */
+    grid-column: span 2;
   }
 
   .actions {
+    display: flex;
+    justify-content: flex-end;
     padding: 1rem 1.5rem;
+    border-top: 1px solid var(--va-background-border);
+
+    .action-button {
+      font-weight: 500;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .add-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .add-item {
+      padding: 0.75rem;
+    }
+
+    .actions {
+      flex-direction: column;
+
+      .action-button {
+        width: 100%;
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &:first-child {
+          margin-left: 0;
+        }
+      }
+    }
+
+    .medicine-card {
+      min-width: 100%;
+      max-width: 100%;
+      margin: 0;
+    }
   }
 }
 </style>
+```

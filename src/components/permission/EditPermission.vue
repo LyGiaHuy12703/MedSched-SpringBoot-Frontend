@@ -1,56 +1,56 @@
 <template>
   <div class="permission-edit">
-    <VaCard stripe stripe-color="primary">
-      <VaCardTitle class="header">
-        <VaIcon name="lock" color="primary" class="mr-2" />
+    <va-card stripe stripe-color="primary" class="medicine-card">
+      <va-card-title class="header">
+        <va-icon name="lock" color="primary" class="mr-2" />
         <h1 class="va-h4">Chỉnh sửa quyền hạn</h1>
-      </VaCardTitle>
-      <VaCardContent class="content">
-        <VaForm ref="formRef" class="form-group">
-          <div class="edit-grid">
-            <div class="edit-item">
-              <div class="label"><VaIcon name="tag" size="small" class="mr-1" /> Tên quyền hạn</div>
-              <VaInput
+      </va-card-title>
+      <va-card-content class="content">
+        <va-form ref="formRef" class="form-group">
+          <div class="add-grid">
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="tag" size="small" class="mr-1" /> Tên quyền hạn
+              </div>
+              <va-input
                 v-model="permissionData.name"
                 placeholder="Nhập tên quyền hạn"
                 :rules="[(v) => !!v || 'Tên quyền hạn là bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
-            <div class="edit-item">
+            <div class="add-item">
               <div class="label">
-                <VaIcon name="link" size="small" class="mr-1" />
-                Đường dẫn API
+                <va-icon name="link" size="small" class="mr-1" /> Đường dẫn API
               </div>
-              <VaInput
+              <va-input
                 v-model="permissionData.apiPath"
                 placeholder="Nhập tên apiPath"
                 :rules="[(v) => !!v || 'apiPath là bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
-            <div class="edit-item">
-              <div class="label">
-                <VaIcon name="folder" size="small" class="mr-1" />
-                Module
-              </div>
-              <VaSelect
+            <div class="add-item">
+              <div class="label"><va-icon name="folder" size="small" class="mr-1" /> Module</div>
+              <va-select
                 v-model="permissionData.module"
                 :options="moduleOptions"
-                placeholder="Nhập tên module"
+                placeholder="Chọn module"
                 :rules="[(v) => !!v || 'Module là bắt buộc']"
                 required-mark
                 value-by="value"
                 text-by="text"
+                class="select-field"
+                dense
               />
             </div>
-            <div class="edit-item">
-              <div class="label">
-                <VaIcon name="code" size="small" class="mr-1" />
-                Phương thức
-              </div>
-
-              <VaSelect
+            <div class="add-item">
+              <div class="label"><va-icon name="code" size="small" class="mr-1" /> Phương thức</div>
+              <va-select
                 v-model="permissionData.method"
                 :options="methodOptions"
                 placeholder="Chọn phương thức"
@@ -58,18 +58,23 @@
                 required-mark
                 value-by="value"
                 text-by="text"
+                class="select-field"
+                dense
               />
             </div>
           </div>
-        </VaForm>
-      </VaCardContent>
-      <VaCardActions class="actions">
-        <VaButton @click="onSave" color="primary">Chỉnh sửa</VaButton>
-        <VaButton @click="$emit('close-modal')" color="secondary">Hủy</VaButton>
-      </VaCardActions>
-    </VaCard>
+        </va-form>
+      </va-card-content>
+      <va-card-actions class="actions">
+        <va-button @click="onSave" color="primary" class="action-button">Chỉnh sửa</va-button>
+        <va-button @click="$emit('close-modal')" color="secondary" class="action-button"
+          >Hủy</va-button
+        >
+      </va-card-actions>
+    </va-card>
   </div>
 </template>
+
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import type { Permission } from '@/interfaces/permission.interface'
@@ -81,19 +86,21 @@ const props = defineProps<{
 }>()
 const permissionData = props.permissionData
 const formRef = ref<{ validate: () => Promise<boolean> } | null>(null)
-
 const moduleOptions = ref<string[]>([])
 
 onMounted(async () => {
   const response = await permissionStore.fetchModuleInPermission()
   moduleOptions.value = response?.data?.data || []
 })
+
 const emit = defineEmits(['edit-permission', 'close-modal'])
+
 const onSave = async () => {
   if (!formRef.value) return
   const isValid = await formRef.value.validate()
   if (isValid) emit('edit-permission', permissionData)
 }
+
 const methodOptions = ref([
   { text: 'GET', value: 'GET' },
   { text: 'POST', value: 'POST' },
@@ -101,39 +108,53 @@ const methodOptions = ref([
   { text: 'DELETE', value: 'DELETE' },
 ])
 </script>
+
 <style scoped lang="scss">
 .permission-edit {
   padding: 1.5rem;
 
+  .medicine-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    min-width: 600px;
+    max-width: 900px;
+    margin: 0 auto;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
   .header {
     display: flex;
     align-items: center;
-    padding-bottom: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--va-background-border);
   }
 
   .content {
     padding: 1.5rem;
   }
 
-  .edit-grid {
+  .add-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
   }
 
-  .edit-item {
+  .add-item {
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border-radius: 8px;
-    background: var(--va-background-element);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    border-radius: 6px;
+    background: var(--va-background-secondary);
+    border: 1px solid var(--va-background-border);
+    transition: background-color 0.2s ease;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--va-box-shadow);
+      background: var(--va-background-element);
     }
 
     .label {
@@ -144,9 +165,23 @@ const methodOptions = ref([
       margin-bottom: 0.5rem;
     }
 
-    .value {
-      font-size: 1rem;
+    .input-field,
+    .select-field {
+      border-radius: 4px;
+      border: 1px solid var(--va-background-border);
+      transition: border-color 0.2s ease;
+
+      &:focus-within {
+        border-color: var(--va-primary);
+      }
+    }
+
+    .value-text {
+      font-size: 0.9rem;
       color: var(--va-text-primary);
+      margin: 0;
+      padding: 0.25rem 0;
+      word-break: break-word;
     }
   }
 
@@ -156,7 +191,54 @@ const methodOptions = ref([
   }
 
   .actions {
+    display: flex;
+    justify-content: flex-end;
     padding: 1rem 1.5rem;
+    border-top: 1px solid var(--va-background-border);
+
+    .action-button {
+      font-weight: 500;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .add-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .add-item {
+      padding: 0.75rem;
+    }
+
+    .actions {
+      flex-direction: column;
+
+      .action-button {
+        width: 100%;
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &:first-child {
+          margin-left: 0;
+        }
+      }
+    }
+
+    .medicine-card {
+      min-width: 100%;
+      max-width: 100%;
+      margin: 0;
+    }
   }
 }
 </style>

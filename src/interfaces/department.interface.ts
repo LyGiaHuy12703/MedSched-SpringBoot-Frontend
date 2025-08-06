@@ -4,6 +4,7 @@ export type Department = {
   id: string
   name: string
   description: string
+  examinationTime: number
   services: Service[]
   icon?: string
   createdAt?: string
@@ -13,5 +14,6 @@ export type Department = {
 export type DepartmentRequest = {
   name: string
   description: string
+  examinationTime: number
   serviceId: string[]
 }

@@ -1,237 +1,375 @@
 <template>
-  <va-card>
+  <va-card class="schedule-management-card">
     <va-card-content>
-      <h4 class="va-h4 text-center">Thông tin lịch trực</h4>
-      <p class="text-center">Thông tin được nhân viên quản trị (Administrator) phân công.</p>
+      <div class="header-section">
+        <h2 class="va-h4">Quản lý Phân công Nhân viên</h2>
+        <p class="text-secondary">Xác nhận hoặc hủy các yêu cầu phân công lịch trực.</p>
+      </div>
 
-      <div class="d-flex my-3 selected-container">
-        <va-select
-          v-model="status"
-          :options="optionsStatus"
-          :rules="[(v) => !!v || 'Trạng thái là bắt buộc']"
-          required-mark
-          value-by="value"
-          text-by="text"
-          @update:model-value="fetchInitialData"
-          class="status-filter"
+      <!-- BỘ LỌC THEO PIVOT_STATUS -->
+      <div class="filters-container">
+        <va-tabs v-model="activePivotTab" grow class="status-tabs">
+          <va-tab name="ALL"> <va-icon name="list" class="mr-2" /> Tất cả </va-tab>
+          <va-tab name="PENDING">
+            <va-icon name="pending_actions" class="mr-2" /> Chờ xác nhận
+          </va-tab>
+          <va-tab name="APPROVED">
+            <va-icon name="check_circle" class="mr-2" /> Đã xác nhận
+          </va-tab>
+          <va-tab name="IN_PROGRESS"> <va-icon name="sync" class="mr-2" /> Đang diễn ra </va-tab>
+          <va-tab name="COMPLETED"> <va-icon name="done_all" class="mr-2" /> Hoàn thành </va-tab>
+          <va-tab name="CANCELED"> <va-icon name="cancel" class="mr-2" /> Đã hủy </va-tab>
+        </va-tabs>
+      </div>
+
+      <!-- BẢNG DỮ LIỆU PHÂN CÔNG -->
+      <va-inner-loading :loading="isLoading">
+        <va-data-table
+          :items="paginatedAssignments"
+          :columns="columns"
+          class="custom-table"
+          no-data-html="<div class='no-data-message'>Không có phân công nào phù hợp.</div>"
+          hoverable
+        >
+          <template #cell(staffInfo)="{ rowData }">
+            <div class="staff-info-cell">
+              <va-avatar
+                :src="rowData.staff.avatar || '/defaultAvatar.png'"
+                :fallback-text="rowData.staff.name?.charAt(0) || '?'"
+              />
+              <div class="staff-details">
+                <div class="staff-name">{{ rowData.staff.name }}</div>
+                <div class="staff-position">{{ rowData.staff.position }}</div>
+              </div>
+            </div>
+          </template>
+
+          <template #cell(shiftTime)="{ rowData }">
+            <div class="font-semibold text-gray-800">
+              {{ formatTime(rowData.doctorShift.startTime) }} -
+              {{ formatTime(rowData.doctorShift.endTime) }}
+            </div>
+          </template>
+
+          <template #cell(dayWork)="{ rowData }">
+            <div class="text-gray-700">{{ formatDate(rowData.doctorShift.dayWork) }}</div>
+          </template>
+
+          <template #cell(status)="{ rowData }">
+            <va-chip size="small" :color="getPivotStatusColor(rowData.status)" class="font-medium">
+              {{ getPivotStatusText(rowData.status) }}
+            </va-chip>
+          </template>
+
+          <template #cell(actions)="{ rowData }">
+            <div v-if="rowData.status === 'PENDING'" class="d-flex align-center gap-2">
+              <va-button
+                preset="primary"
+                size="small"
+                icon="check"
+                color="success"
+                @click="handleUpdateStatus(rowData, 'APPROVED')"
+                title="Xác nhận phân công"
+                class="action-button"
+              >
+                Xác nhận
+              </va-button>
+              <va-button
+                preset="primary"
+                size="small"
+                icon="close"
+                color="danger"
+                @click="handleUpdateStatus(rowData, 'CANCELED')"
+                title="Hủy phân công"
+                class="action-button"
+              >
+                Hủy
+              </va-button>
+            </div>
+            <div v-else class="text-gray-500 italic text-sm">Không có thao tác</div>
+          </template>
+        </va-data-table>
+      </va-inner-loading>
+
+      <!-- PHẦN PHÂN TRANG -->
+      <div v-if="!isLoading && totalPages > 1" class="pagination-container">
+        <div class="pagination-info">
+          <span class="info-text">
+            Hiển thị <strong>{{ startRecord }}</strong> - <strong>{{ endRecord }}</strong> trên tổng
+            số <strong>{{ filteredAssignments.length }}</strong> phân công
+          </span>
+        </div>
+        <va-pagination
+          v-model="currentPage"
+          :pages="totalPages"
+          :visible-pages="5"
+          class="pagination-component"
         />
       </div>
-      <va-data-table :items="schedules" :columns="columns" class="custom-table" hoverable>
-        <template #cell(name)="slotProps">
-          <span class="staff-name">{{
-            slotProps.rowData.staffs
-              ?.map((staff) => staff.user?.name)
-              .filter((name) => name)
-              .join(', ') || 'Không có nhân viên'
-          }}</span>
-        </template>
-        <template #cell(status)="slotProps">
-          <span
-            v-if="
-              ['COMPLETED', 'CANCELED', 'APPROVED', 'IN_PROGRESS'].includes(
-                slotProps.rowData.status,
-              )
-            "
-            :class="`status-text ${slotProps.rowData.status.toLowerCase()}`"
-          >
-            {{ slotProps.rowData.status }}
-          </span>
-          <va-select
-            v-else
-            v-model="slotProps.rowData.status"
-            :options="getValidStatusOptions(slotProps.rowData.status)"
-            value-by="value"
-            text-by="text"
-            @update:model-value="
-              handleUpdateStatus(slotProps.rowData.id, $event, slotProps.rowData.status)
-            "
-            class="status-select"
-          />
-        </template>
-      </va-data-table>
     </va-card-content>
   </va-card>
 </template>
 
 <script lang="ts" setup>
-import type { DoctorShift } from '@/interfaces/doctorShift.interfaces'
-import { useScheduleStore } from '@/stores/schedule.store'
-import { onMounted, ref } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { toast } from 'vue3-toastify'
+import type { StaffDoctorShift } from '@/interfaces/doctorShift.interfaces'
+import { useScheduleStore } from '@/stores/schedule.store'
+import { storeToRefs } from 'pinia'
 
-// Enum ShiftStatusEnum dưới dạng object trong TypeScript
-const ShiftStatusEnum = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETED: 'COMPLETED',
-  CANCELED: 'CANCELED',
-} as const
-
-// Hàm kiểm tra chuyển trạng thái hợp lệ
-const isValidStatusTransition = (currentStatus: string, newStatus: string): boolean => {
-  switch (currentStatus) {
-    case ShiftStatusEnum.PENDING:
-      return newStatus === ShiftStatusEnum.APPROVED || newStatus === ShiftStatusEnum.CANCELED
-    case ShiftStatusEnum.APPROVED:
-    case ShiftStatusEnum.IN_PROGRESS:
-    case ShiftStatusEnum.COMPLETED:
-    case ShiftStatusEnum.CANCELED:
-      return false
-    default:
-      return false
-  }
-}
-
-// Hàm lấy các tùy chọn trạng thái hợp lệ
-const getValidStatusOptions = (currentStatus: string) => {
-  const allOptions = [
-    { text: 'Chờ xác nhận', value: 'PENDING' },
-    { text: 'Xác nhận', value: 'APPROVED' },
-    { text: 'Đang diễn ra', value: 'IN_PROGRESS' },
-    { text: 'Đã hủy', value: 'CANCELED' },
-    { text: 'Đã hoàn thành', value: 'COMPLETED' },
-  ]
-  return allOptions.filter(
-    (option) =>
-      isValidStatusTransition(currentStatus, option.value) || option.value === currentStatus,
-  )
-}
-
-const status = ref('2')
-const schedules = ref<DoctorShift[]>([])
-const optionsStatus = ref([
-  { text: 'Chờ xác nhận', value: '0' },
-  { text: 'Đã xác nhận', value: '1' },
-  { text: 'Đang diễn ra', value: '2' },
-  { text: 'Đã hủy', value: '4' },
-  { text: 'Đã hoàn thành', value: '3' },
-])
-const optionsStatusChange = ref([
-  { text: 'Chờ xác nhận', value: 'PENDING' },
-  { text: 'Xác nhận', value: 'APPROVED' },
-  { text: 'Đang diễn ra', value: 'IN_PROGRESS' },
-  { text: 'Đã hủy', value: 'CANCELED' },
-  { text: 'Đã hoàn thành', value: 'COMPLETED' },
-])
-const columns = ref([
-  { label: 'ID', value: 'id', key: 'id' },
-  { label: 'Nhân viên tiếp nhận ca trực', value: 'name', key: 'name' },
-  { label: 'Ngày trực', value: 'dayWork', key: 'dayWork' },
-  { label: 'Giờ bắt đầu', value: 'startTime', key: 'startTime' },
-  { label: 'Giờ kết thúc', value: 'endTime', key: 'endTime' },
-  { label: 'Trạng thái', value: 'status', key: 'status' },
-])
-
+// --- STATE MANAGEMENT ---
 const scheduleStore = useScheduleStore()
+// Sử dụng allAssignments để lưu trữ toàn bộ dữ liệu fetch về
+const { assignments: allAssignments, isLoading } = storeToRefs(scheduleStore)
 
-onMounted(async () => {
-  await fetchInitialData(status.value)
+// --- FILTERS & PAGINATION STATE (CLIENT-SIDE) ---
+const activePivotTab = ref('IN_PROGRESS')
+const currentPage = ref(1)
+const itemsPerPage = ref(5)
+
+// --- UI CONFIG ---
+const columns = ref([
+  { key: 'staffInfo', label: 'Nhân viên', width: '35%' },
+  {
+    key: 'shiftTime',
+    label: 'Ca trực',
+    sortable: true,
+    sortingKey: 'doctorShift.startTime',
+    width: '20%',
+  },
+  {
+    key: 'dayWork',
+    label: 'Ngày trực',
+    sortable: true,
+    sortingKey: 'doctorShift.dayWork',
+    width: '15%',
+  },
+  { key: 'status', label: 'Trạng thái', sortable: true, width: '15%' },
+  { key: 'actions', label: 'Thao tác', width: '15%' },
+])
+
+// --- CLIENT-SIDE COMPUTED PROPERTIES ---
+
+// 1. Lọc danh sách assignments dựa trên tab đang active
+const filteredAssignments = computed(() => {
+  if (activePivotTab.value === 'ALL') {
+    return allAssignments.value
+  }
+  return allAssignments.value.filter((a) => a.status === activePivotTab.value)
 })
 
-const fetchInitialData = async (statusFetch?: string) => {
-  await scheduleStore.fetchSchedulesByStaff(0, 100, statusFetch)
-  schedules.value = scheduleStore.schedules
-}
+// 2. Tính toán tổng số trang dựa trên danh sách đã lọc
+const totalPages = computed(() => {
+  return Math.ceil(filteredAssignments.value.length / itemsPerPage.value)
+})
 
-const handleUpdateStatus = async (id: string, newStatus: string, originalStatus: string) => {
+// 3. Lấy ra các items cho trang hiện tại
+const paginatedAssignments = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredAssignments.value.slice(start, end)
+})
+
+// 4. Cập nhật thông tin phân trang
+const startRecord = computed(() => {
+  if (filteredAssignments.value.length === 0) return 0
+  return (currentPage.value - 1) * itemsPerPage.value + 1
+})
+const endRecord = computed(() => {
+  return Math.min(currentPage.value * itemsPerPage.value, filteredAssignments.value.length)
+})
+
+// --- METHODS ---
+// Fetch toàn bộ dữ liệu một lần
+const fetchAllAssignments = async () => {
   try {
-    await scheduleStore.updateStatusSchedule(id, newStatus)
-    toast.success('Cập nhật trạng thái thành công')
-    status.value =
-      optionsStatus.value.find(
-        () =>
-          optionsStatusChange.value.find((change) => change.value === newStatus)?.submissionValue ||
-          newStatus,
-      )?.value || status.value
-    await fetchInitialData(status.value)
-  } catch (error: unknown) {
-    toast.error(error.message || 'Cập nhật trạng thái thất bại')
-    const row = schedules.value.find((item) => item.id === id)
-    if (row) {
-      row.status = originalStatus
-    }
+    // Gọi API để fetch tất cả (ví dụ: size lớn)
+    await scheduleStore.fetchAssignments({ page: 0, size: 10000 })
+  } catch (error: any) {
+    toast.error(error.message || 'Không thể tải danh sách phân công.')
   }
 }
+
+const handleUpdateStatus = async (
+  assignment: StaffDoctorShift,
+  newStatus: 'APPROVED' | 'CANCELED',
+) => {
+  try {
+    await scheduleStore.updateAssignmentStatus(assignment.id, newStatus)
+    toast.success('Cập nhật trạng thái phân công thành công!')
+
+    // Sau khi cập nhật, fetch lại toàn bộ danh sách để đảm bảo dữ liệu luôn mới nhất
+    await fetchAllAssignments()
+
+    // Kiểm tra và điều chỉnh trang hiện tại nếu cần
+    if (currentPage.value > totalPages.value && totalPages.value > 0) {
+      currentPage.value = totalPages.value
+    }
+  } catch (error: any) {
+    toast.error(error.message || 'Cập nhật trạng thái thất bại.')
+  }
+}
+
+// --- FORMATTERS ---
+const formatDate = (date: string | undefined) =>
+  date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A'
+const formatTime = (time: string | undefined) => (time ? time.substring(0, 5) : 'N/A')
+
+const getPivotStatusText = (status: string) => {
+  const map: { [key: string]: string } = {
+    PENDING: 'Chờ xác nhận',
+    APPROVED: 'Đã xác nhận',
+    CANCELED: 'Đã hủy',
+    IN_PROGRESS: 'Đang diễn ra',
+    COMPLETED: 'Hoàn thành',
+  }
+  return map[status] || status
+}
+
+const getPivotStatusColor = (status: string) => {
+  const map: { [key: string]: string } = {
+    PENDING: 'warning',
+    APPROVED: 'success',
+    CANCELED: 'danger',
+    IN_PROGRESS: 'info',
+    COMPLETED: 'secondary',
+  }
+  return map[status] || 'secondary'
+}
+
+// --- LIFECYCLE & WATCHERS ---
+watch(activePivotTab, () => {
+  // Khi đổi tab, reset về trang 1
+  currentPage.value = 1
+})
+
+// Fetch dữ liệu khi component được mount lần đầu
+onMounted(fetchAllAssignments)
 </script>
 
 <style scoped lang="scss">
-.selected-container {
-  justify-content: end;
-  margin-bottom: 20px;
+/* Biến màu sắc và theme */
+:root {
+  --bg-color: #f5f7fa;
+  --card-bg-color: #ffffff;
+  --text-color: #1f2a44;
+  --text-color-light: #6b7280;
+  --border-color: #e5e7eb;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  --primary-color: #3b82f6;
 }
 
-.status-filter {
-  width: 200px;
+/* Container chính */
+.schedule-management-card {
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
 
+/* Header */
+.header-section {
+  text-align: center;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  .va-h4 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+  .text-secondary {
+    font-size: 1rem;
+    color: var(--text-color-light);
+  }
+}
+
+/* Tabs lọc */
+.filters-container {
+  margin-bottom: 2rem;
+}
+.status-tabs {
+  :deep(.va-tabs__tabs) {
+    background-color: var(--bg-color);
+    border-radius: 8px;
+    padding: 6px;
+  }
+  :deep(.va-tab) {
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    &.va-tab--active {
+      background-color: var(--primary-color);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+  }
+}
+
+/* Bảng dữ liệu */
 .custom-table {
   :deep(.va-data-table__table-thead) {
-    background-color: #ecf0f1 !important; /* Màu header */
-    font-weight: bold;
-  }
-
-  :deep(.va-data-table__table-row) {
-    transition: background-color 0.3s ease;
-    &:hover {
-      background-color: #f5f7fa !important; /* Màu khi hover */
+    background-color: #f8fafc !important;
+    th {
+      font-weight: 600;
+      color: var(--text-color);
+      text-transform: uppercase;
+      font-size: 0.8rem;
     }
   }
-
-  .staff-name {
-    font-size: 14px;
-    color: #2c3e50;
+  :deep(td) {
+    vertical-align: middle;
   }
+}
 
-  .status-text {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 500;
-    font-size: 12px;
-    text-transform: capitalize;
-
-    &.pending {
-      background-color: #ffeb3b; /* Vàng nhạt - Chờ xác nhận */
-      color: #333;
+/* Cell thông tin nhân viên */
+.staff-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  .staff-details {
+    .staff-name {
+      font-weight: 600;
+      color: var(--text-color);
     }
-
-    &.approved {
-      background-color: #4caf50; /* Xanh lá - Đã xác nhận */
-      color: white;
-    }
-
-    &.in_progress {
-      background-color: #2196f3; /* Xanh dương - Đang diễn ra */
-      color: white;
-    }
-
-    &.canceled {
-      background-color: #f44336; /* Đỏ - Đã hủy */
-      color: white;
-    }
-
-    &.completed {
-      background-color: #9e9e9e; /* Xám - Đã hoàn thành */
-      color: white;
+    .staff-position {
+      font-size: 0.85rem;
+      color: var(--text-color-light);
     }
   }
+}
 
-  .status-select {
-    :deep(.va-input-wrapper__fieldset) {
-      width: 150px;
-      border-color: #ccc;
+/* Nút thao tác */
+.action-button {
+  border-radius: 6px;
+  font-weight: 500;
+}
 
-      &:hover {
-        border-color: #888;
-      }
+/* Thông báo không có dữ liệu */
+.no-data-message {
+  text-align: center;
+  color: var(--text-color-light);
+  padding: 2rem;
+}
+
+/* Phân trang */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 0 0.5rem;
+  .pagination-info .info-text {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    strong {
+      color: var(--text-color);
     }
-
-    :deep(.va-select-option) {
-      padding: 5px 10px;
-      &:hover {
-        background-color: #f5f7fa;
-      }
+  }
+  :deep(.va-pagination__item) {
+    border-radius: 6px;
+    &.va-pagination__item--active {
+      background-color: var(--primary-color);
     }
   }
 }

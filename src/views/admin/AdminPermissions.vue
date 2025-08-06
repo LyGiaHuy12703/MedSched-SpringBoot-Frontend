@@ -1,65 +1,77 @@
 <template>
   <va-inner-loading :loading="permissionStore.loading">
-    <va-card>
-      <va-card-content>
-        <div class="justify-content-around my-3">
-          <div class="my-3"><h1>Quản lý quyền hạn</h1></div>
-          <div><va-button @click="onShowAddModal">Thêm quyền hạn</va-button></div>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+    <va-card class="shadow-sm">
+      <va-card-content class="p-6">
+        <h1 class="text-3xl font-semibold text-gray-800 text-center mb-6">Quản lý quyền hạn</h1>
+
+        <div class="d-flex gap-4 mb-6 align-center">
           <va-input
             v-model="searchQuery"
             placeholder="Tìm kiếm theo tên, đường dẫn, module, phương thức..."
             clearable
-            class="filter-input"
-            aria-label="Tìm kiếm bác sĩ theo tên"
+            class="input-field flex-grow"
+            aria-label="Tìm kiếm quyền hạn"
           >
             <template #prependInner>
-              <va-icon name="search" color="#718096" />
+              <va-icon name="search" color="text-gray-600" size="medium" />
             </template>
           </va-input>
-
-          <div class="filter-actions">
-            <va-button preset="secondary" @click="resetFilters" class="action-button">
-              Xóa bộ lọc
-            </va-button>
-            <va-button preset="primary" @click="handleSearch" class="action-button">
-              Tìm kiếm
-            </va-button>
-          </div>
+          <va-button preset="secondary" @click="resetFilters" class="action-button px-6 py-2">
+            Xóa bộ lọc
+          </va-button>
+          <va-button preset="primary" @click="handleSearch" class="action-button px-6 py-2">
+            Tìm kiếm
+          </va-button>
         </div>
-
+        <va-button preset="primary" @click="onShowAddModal" class="action-button px-6 py-2 mb-2">
+          Thêm quyền hạn
+        </va-button>
         <VaDataTable
           :items="permissionList"
           :columns="columns"
           hoverable
+          class="custom-table"
           @filtered="filteredCount = $event.items.length"
         >
           <template #cell(id)="slotProps">
             per0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
           </template>
           <template #cell(actions)="slotProps">
-            <VaButton
-              preset="plain"
-              icon="visibility"
-              @click="onShowDetailModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="edit"
-              class="ml-3"
-              @click="onShowEditModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="delete"
-              class="ml-3"
-              @click="onShowDeleteModal(slotProps.rowData)"
-            />
+            <div class="d-flex justify-center gap-2">
+              <VaButton
+                preset="primary"
+                size="small"
+                icon="visibility"
+                @click="onShowDetailModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xem chi tiết"
+                >Xem chi tiết</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                icon="edit"
+                color="warning"
+                @click="onShowEditModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Chỉnh sửa"
+                >Chỉnh sửa</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                icon="delete"
+                color="danger"
+                @click="onShowDeleteModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xóa"
+                >Xóa</VaButton
+              >
+            </div>
           </template>
         </VaDataTable>
 
-        <div class="my-3 d-flex pagination-container">
+        <div class="d-flex justify-end my-2 pagination-container">
           <VaPagination
             v-model="currentPage"
             :total="total"
@@ -67,55 +79,54 @@
             :rows-per-page="pageSize"
             :rows-per-page-options="[5, 10, 20]"
             :visible-pages="5"
-            class="mt-6"
+            class="custom-pagination"
             @update:modelValue="onPageChange"
           />
         </div>
 
-        <div class="d-flex">
-          <VaAlert class="!mt-6" color="info" outline>
-            Number of filtered items:
-            <VaChip>{{ filteredCount }}</VaChip>
-          </VaAlert>
-          <VaAlert class="!mt-6" color="info" outline>
-            Total items:
-            <VaChip>{{ total }}</VaChip>
-          </VaAlert>
+        <div class="d-flex gap-4 mt-6">
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Số mục đã lọc: <va-chip color="danger" outline>{{ filteredCount }}</va-chip>
+          </va-alert>
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Tổng số mục: <va-chip color="danger" outline>{{ total }}</va-chip>
+          </va-alert>
         </div>
+
+        <VaModal v-model="isShowAddModal" hide-default-actions>
+          <AddPermission
+            v-if="isShowAddModal"
+            :permissionData="permissionData"
+            @save-permission="onSavePermission"
+            @close-modal="onShowAddModal"
+          />
+        </VaModal>
+        <VaModal v-model="isShowEditModal" hide-default-actions>
+          <EditPermission
+            v-if="isShowEditModal && selectedPermissionForEdit"
+            :permissionData="selectedPermissionForEdit!"
+            @edit-permission="onChangePermission"
+            @close-modal="onShowEditModal"
+          />
+        </VaModal>
+        <VaModal v-model="isShowDetailModal" hide-default-actions @ok="onCloseDetailModal">
+          <DetailPermission
+            v-if="isShowDetailModal && selectedPermissionForDetail"
+            :permissionDetail="selectedPermissionForDetail!"
+            @close-modal="onCloseDetailModal"
+          />
+        </VaModal>
+        <VaModal v-model="isShowDeleteModal" hide-default-actions>
+          <DeleteConfirm
+            :title="'Cảnh báo xóa quyền hạn'"
+            :message="'Bạn có muốn xóa quyền hạn không?'"
+            @close-confirm="onCloseConfirm"
+            @confirm="deletePermission"
+          />
+        </VaModal>
       </va-card-content>
     </va-card>
   </va-inner-loading>
-  <VaModal v-model="isShowAddModal" hide-default-actions>
-    <AddPermission
-      v-if="isShowAddModal"
-      :permissionData="permissionData"
-      @save-permission="onSavePermission"
-      @close-modal="onShowAddModal"
-    />
-  </VaModal>
-  <VaModal v-model="isShowEditModal" hide-default-actions>
-    <EditPermission
-      v-if="isShowEditModal && selectedPermissionForEdit"
-      :permissionData="selectedPermissionForEdit!"
-      @edit-permission="onChangePermission"
-      @close-modal="onShowEditModal"
-    />
-  </VaModal>
-  <VaModal v-model="isShowDetailModal" hide-default-actions @ok="onCloseDetailModal">
-    <DetailPermission
-      v-if="isShowDetailModal && selectedPermissionForDetail"
-      :permissionDetail="selectedPermissionForDetail!"
-      @close-modal="onCloseDetailModal"
-    />
-  </VaModal>
-  <VaModal v-model="isShowDeleteModal" hide-default-actions>
-    <DeleteConfirm
-      :title="'Cảnh báo xóa quyền hạn'"
-      :message="'Bạn có muốn xóa quyền hạn không?'"
-      @close-confirm="onCloseConfirm"
-      @confirm="deletePermission"
-    />
-  </VaModal>
 </template>
 
 <script setup lang="ts">
@@ -189,7 +200,7 @@ onMounted(async () => {
 })
 
 async function fetchPermissionData() {
-  await permissionStore.fetchPermissions(currentPage.value - 1, pageSize.value)
+  await permissionStore.fetchPermissions(currentPage.value - 1, 5)
   permissionList.value = permissionStore.permissions
   if (permissionStore.meta) {
     currentPage.value = permissionStore.meta.page
@@ -273,12 +284,113 @@ const deletePermission = async () => {
   }
 }
 </script>
+
 <style scoped lang="scss">
-.pagination-container {
-  justify-content: end;
-  margin-top: 40px;
+.input-field {
+  :deep(.va-input-wrapper) {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+    &:hover {
+      border-color: var(--va-primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  }
+  :deep(.va-input-wrapper__field) {
+    font-size: 1rem;
+    color: #1e293b;
+  }
 }
-:deep(.va-data-table__table-thead) {
-  background-color: #ecf0f1 !important; /* đổi màu header */
+
+.custom-table {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  :deep(.va-data-table__table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  :deep(.va-data-table__table-thead) {
+    background-color: #e5e7eb !important;
+    th {
+      font-weight: 600;
+      color: #1e293b;
+      padding: 1.25rem;
+      border-bottom: 2px solid #d1d5db;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+  }
+  :deep(.va-data-table__table-row) {
+    transition: background-color 0.3s ease;
+    &:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    &:hover {
+      background-color: #d1d5db !important;
+    }
+    td {
+      padding: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+      font-size: 1rem;
+    }
+  }
+}
+
+.action-button {
+  :deep(.va-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+.pagination-container {
+  justify-content: flex-end;
+}
+
+.custom-pagination {
+  :deep(.va-pagination__item) {
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+    &:hover {
+      background-color: #e5e7eb;
+      transform: scale(1.1);
+    }
+    &.va-pagination__item--active {
+      background-color: var(--va-primary);
+      color: #ffffff;
+    }
+  }
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.text-gray-600 {
+  color: #4b5563;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.text-gray-800 {
+  color: #1e293b;
+}
+:deep(.va-data-table__table-th) {
+  --va-data-table-align: center !important;
 }
 </style>

@@ -1,4 +1,3 @@
-```vue
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from 'vue3-toastify'
@@ -79,4 +78,3 @@ const schedules = ref([
   }
 }
 </style>
-```

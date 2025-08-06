@@ -23,15 +23,15 @@ export type Medicine = {
 
 export type CreateMedicineRequest = {
   name: string
-  description: string
-  dosage: string
-  sideEffects: string
   price: number
-  formulation?: string
-  therapeuticGroup?: string
-  indications?: string
-  contraindications?: string
-  cautions?: string
-  notes?: string
-  referenceDocuments?: string
+  formulation: string
+  therapeuticGroup: string
+  description: string
+  dosage: string[]
+  indications: string[]
+  contraindications: string[]
+  cautions: string[]
+  sideEffects: string[]
+  notes: string
+  referenceDocuments: string
 }

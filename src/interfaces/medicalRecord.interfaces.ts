@@ -23,6 +23,7 @@ export interface PersonInfo {
   gender?: string
   dob?: string
   department?: string
+  address?: string
 }
 
 // Response DTO nhận về từ server

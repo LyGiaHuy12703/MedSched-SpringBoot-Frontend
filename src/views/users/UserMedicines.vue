@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="find-medicine-page">
     <h1 class="page-title">Tìm Kiếm Thuốc</h1>
@@ -459,4 +458,3 @@ const truncateText = (text?: string, maxLength: number = 100) => {
   }
 }
 </style>
-```

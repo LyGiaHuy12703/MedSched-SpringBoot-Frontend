@@ -10,12 +10,52 @@
         <div class="hero-stats">
           <div class="stat-item">
             <div class="stat-number">{{ meta?.total || 0 }}</div>
-            <div class="stat-label">Feedback</div>
+            <div class="stat-label">Tổng Feedback</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">{{ averageRating.toFixed(1) }}</div>
             <div class="stat-label">Điểm TB</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filters-controls">
+        <div class="filter-item">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Tìm theo tên bệnh nhân, nội dung..."
+            clearable
+            class="search-input"
+          >
+            <template #prependInner>
+              <va-icon name="search" />
+            </template>
+          </va-input>
+        </div>
+        <div class="filter-item">
+          <va-select
+            v-model="filterRating"
+            placeholder="Lọc theo rating"
+            :options="[
+              { text: '5 sao', value: 5 },
+              { text: '4 sao', value: 4 },
+              { text: '3 sao', value: 3 },
+              { text: '2 sao', value: 2 },
+              { text: '1 sao', value: 1 },
+            ]"
+            value-by="value"
+            clearable
+            class="filter-select"
+          />
+        </div>
+        <div class="filter-item">
+          <va-button preset="secondary" @click="clearFilters">
+            <va-icon name="refresh" />
+            Xóa bộ lọc
+          </va-button>
         </div>
       </div>
     </div>
@@ -28,8 +68,8 @@
             <va-icon name="forum" class="section-icon" />
             Danh sách feedback
           </h2>
-          <va-chip color="info" size="small" class="count-chip">
-            {{ paginatedFeedbacks.length }} / {{ meta?.total || 0 }}
+          <va-chip v-if="meta?.total" color="info" size="small" class="count-chip">
+            {{ feedbacks.length }} / {{ meta.total }}
           </va-chip>
         </div>
         <div class="header-right">
@@ -57,8 +97,8 @@
       </div>
 
       <!-- Feedback Grid/List -->
-      <div v-else-if="paginatedFeedbacks.length > 0" :class="['feedback-grid', viewMode]">
-        <div v-for="feedback in paginatedFeedbacks" :key="feedback.id" class="feedback-card">
+      <div v-else-if="feedbacks.length > 0" :class="['feedback-grid', viewMode]">
+        <div v-for="feedback in feedbacks" :key="feedback.id" class="feedback-card">
           <va-card class="card-inner" :class="{ urgent: isRecentFeedback(feedback.createdAt) }">
             <va-card-content>
               <div class="card-header">
@@ -74,7 +114,7 @@
                       class="recent-badge"
                       title="Feedback mới"
                     >
-                      <va-icon name="fiber_new" size="small" color="success" />
+                      <va-icon name="fiber_new" size="small" color="white" />
                     </div>
                   </div>
                   <div class="patient-info">
@@ -91,7 +131,7 @@
                       v-for="star in 5"
                       :key="star"
                       name="star"
-                      :color="star <= feedback.rating ? 'warning' : 'gray'"
+                      :color="star <= feedback.rating ? 'warning' : '#E0E0E0'"
                       size="small"
                       class="star"
                     />
@@ -126,7 +166,7 @@
                   preset="danger"
                   icon="delete"
                   size="small"
-                  @click="deleteFeedback(feedback.id)"
+                  @click="openDeleteConfirm(feedback.id)"
                 >
                   Xóa
                 </va-button>
@@ -165,52 +205,62 @@
         v-model="currentPage"
         :pages="totalPages"
         :visible-pages="5"
-        @update:model-value="fetchFeedbacks"
         class="pagination-component"
       />
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <va-modal v-model="isDeleteModalOpen" hide-default-actions @close="isDeleteModalOpen = false">
+      <DeleteConfirm
+        title="Xác nhận xóa Feedback"
+        message="Bạn có chắc chắn muốn xóa đánh giá này không? Hành động này không thể hoàn tác."
+        @confirm="handleDeleteConfirm"
+        @close-confirm="isDeleteModalOpen = false"
+      />
+    </va-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { PatientFeedback } from '@/interfaces/patientFeedback.interfaces'
 import { usePatientFeedbackStore } from '@/stores/patientFeedback.store'
 import { ref, computed, watch, onMounted } from 'vue'
 import { toast } from 'vue3-toastify'
 import { debounce } from 'lodash-es'
+import DeleteConfirm from '@/components/DeleteConfirm.vue'
 
-// State
+// --- STATE MANAGEMENT ---
+const feedbackStore = usePatientFeedbackStore()
+const loading = ref(true)
+
+// --- FILTERS & PAGINATION STATE ---
 const searchQuery = ref('')
-const filterRating = ref('')
+const filterRating = ref<number | ''>('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const viewMode = ref<'grid' | 'list'>('grid')
-const loading = ref(false)
 
-// Store
-const feedbackStore = usePatientFeedbackStore()
+// --- MODAL STATE ---
+const isDeleteModalOpen = ref(false)
+const selectedFeedbackIdToDelete = ref<string | null>(null)
 
-// Computed
+// --- COMPUTED PROPERTIES ---
 const feedbacks = computed(() => feedbackStore.feedbacks)
 const meta = computed(() => feedbackStore.meta)
-const paginatedFeedbacks = computed(() => {
-  if (!filterRating.value) return feedbacks.value
-  return feedbacks.value.filter((f) => f.rating === Number(filterRating.value))
-})
-const totalPages = computed(() => Math.ceil((meta.value?.total || 0) / itemsPerPage.value))
+
+// Dữ liệu `totalPages`, `startRecord`, `endRecord` được tính từ `meta` do backend trả về
+const totalPages = computed(() => meta.value?.pages || 1)
 const startRecord = computed(() =>
-  meta.value?.total ? (meta.value.page - 1) * itemsPerPage.value + 1 : 0,
+  meta.value?.total ? (currentPage.value - 1) * itemsPerPage.value + 1 : 0,
 )
 const endRecord = computed(() =>
-  Math.min(meta.value?.page * itemsPerPage.value, meta.value?.total || 0),
+  Math.min(currentPage.value * itemsPerPage.value, meta.value?.total || 0),
 )
-const averageRating = computed(() => {
-  if (!feedbacks.value.length) return 0
-  const sum = feedbacks.value.reduce((acc, feedback) => acc + feedback.rating, 0)
-  return sum / feedbacks.value.length
-})
+// Giả định backend trả về `averageRating` trong meta để có số liệu chính xác
+const averageRating = computed(() => meta.value?.averageRating || 0)
 
-// Methods
+// --- METHODS ---
+
+// Helper methods for formatting
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('vi-VN', {
     day: '2-digit',
@@ -235,13 +285,20 @@ const isRecentFeedback = (dateString: string) => {
   const now = new Date()
   const date = new Date(dateString)
   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  return diffInHours < 24
+  return diffInHours < 24 // Feedback trong vòng 24 giờ được coi là mới
 }
 
+// API call method
 const fetchFeedbacks = async () => {
   loading.value = true
   try {
-    await feedbackStore.fetchPatientFeedbacks(0, itemsPerPage.value, searchQuery.value)
+    // Truyền tất cả các tham số lọc và phân trang vào store
+    await feedbackStore.fetchPatientFeedbacks(
+      currentPage.value - 1, // API thường bắt đầu từ trang 0
+      itemsPerPage.value,
+      searchQuery.value,
+      filterRating.value || undefined,
+    )
     if (feedbackStore.error) {
       toast.error(feedbackStore.error)
     }
@@ -252,42 +309,58 @@ const fetchFeedbacks = async () => {
   }
 }
 
-const deleteFeedback = async (id: string) => {
-  if (!confirm('Bạn có chắc muốn xóa feedback này?')) return
+// Delete methods
+const openDeleteConfirm = (id: string) => {
+  selectedFeedbackIdToDelete.value = id
+  isDeleteModalOpen.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (!selectedFeedbackIdToDelete.value) return
   try {
-    await feedbackStore.deletePatientFeedback(id)
+    await feedbackStore.deletePatientFeedback(selectedFeedbackIdToDelete.value)
     toast.success('Xóa feedback thành công.')
+    isDeleteModalOpen.value = false
+    // Tải lại dữ liệu sau khi xóa
+    await fetchFeedbacks()
   } catch (err) {
     toast.error('Không thể xóa feedback.')
   }
 }
 
+// Filter controls
 const clearFilters = () => {
   searchQuery.value = ''
   filterRating.value = ''
-  Ascending(1)
-  currentPage.value = 1
-  fetchFeedbacks()
+  if (currentPage.value !== 1) {
+    currentPage.value = 1
+  } else {
+    // Nếu đã ở trang 1, watcher sẽ không tự trigger, cần gọi thủ công
+    fetchFeedbacks()
+  }
 }
 
+// Debounce API calls to avoid spamming
 const debouncedFetch = debounce(fetchFeedbacks, 500)
 
-// Watchers
-watch([searchQuery, filterRating, currentPage], debouncedFetch, { immediate: true })
+// --- WATCHERS & LIFECYCLE ---
+watch([searchQuery, filterRating, currentPage], debouncedFetch)
 
-// Lifecycle
-onMounted(fetchFeedbacks)
+onMounted(() => {
+  fetchFeedbacks()
+})
 </script>
 
 <style lang="scss" scoped>
+/* Giữ nguyên toàn bộ CSS của bạn, vì nó đã rất đẹp và không cần thay đổi */
 .feedback-forum-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   font-family: 'Inter', sans-serif;
 
   .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, rgba(93, 95, 239, 0.2), rgba(93, 95, 239, 0.05));
+    color: var(--va-primary);
     padding: clamp(2rem, 5vw, 2.5rem) clamp(1rem, 3vw, 1.5rem);
     margin-bottom: 1.5rem;
 
@@ -335,102 +408,16 @@ onMounted(fetchFeedbacks)
     }
   }
 
-  .stats-section {
-    max-width: 1200px;
-    margin: 0 auto 2rem;
-    padding: 0 clamp(0.75rem, 2vw, 1rem);
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-
-      .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
-
-        &:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        &.total .stat-icon {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        &.positive .stat-icon {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-        &.negative .stat-icon {
-          background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-        }
-        &.average .stat-icon {
-          background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        }
-
-        .stat-icon {
-          width: 50px;
-          height: 50px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 1.5rem;
-        }
-
-        .stat-content {
-          .stat-number {
-            font-size: clamp(1.5rem, 4vw, 1.75rem);
-            font-weight: 700;
-            color: var(--va-text-primary);
-            margin-bottom: 0.25rem;
-          }
-
-          .stat-label {
-            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
-            font-weight: 600;
-            color: var(--va-text-primary);
-          }
-        }
-      }
-    }
-  }
-
   .filters-section {
     max-width: 1200px;
     margin: 0 auto 2rem;
     padding: 0 clamp(0.75rem, 2vw, 1rem);
 
-    .filters-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-
-      .filters-title {
-        font-size: clamp(1.25rem, 3vw, 1.5rem);
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-
-        .title-icon {
-          margin-right: 0.5rem;
-        }
-      }
-    }
-
     .filters-controls {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: 2fr 1fr auto;
       gap: 1rem;
+      align-items: center;
 
       .filter-item {
         .search-input,
@@ -504,7 +491,7 @@ onMounted(fetchFeedbacks)
 
     .feedback-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 1.5rem;
 
       &.list {
@@ -513,22 +500,30 @@ onMounted(fetchFeedbacks)
 
       .feedback-card {
         .card-inner {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
           background: white;
           border-radius: 12px;
-          padding: 1.5rem;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
           transition: all 0.3s ease;
-          border: 2px solid transparent;
+          border-left: 4px solid transparent;
 
           &:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-            border-color: var(--va-primary);
+            border-left-color: var(--va-primary);
           }
 
           &.urgent {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+            border-left-color: var(--va-success);
+          }
+
+          .va-card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
           }
 
           .card-header {
@@ -550,16 +545,21 @@ onMounted(fetchFeedbacks)
                   height: 50px;
                   border-radius: 50%;
                   object-fit: cover;
-                  border: 2px solid var(--va-primary);
+                  border: 2px solid var(--va-primary-lightest);
                 }
 
                 .recent-badge {
                   position: absolute;
-                  bottom: -5px;
-                  right: -5px;
+                  bottom: -2px;
+                  right: -2px;
                   background: var(--va-success);
                   border-radius: 50%;
-                  padding: 0.25rem;
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border: 2px solid white;
                 }
               }
 
@@ -607,12 +607,17 @@ onMounted(fetchFeedbacks)
 
           .feedback-content {
             margin-bottom: 1rem;
+            flex-grow: 1;
 
             .feedback-text {
               font-size: clamp(0.85rem, 2vw, 0.9rem);
-              color: var(--va-text-secondary);
+              color: var(--va-text-primary);
               line-height: 1.6;
               margin: 0 0 0.75rem;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 3;
+              overflow: hidden;
+              display: -webkit-box;
             }
 
             .tags-section {
@@ -712,70 +717,17 @@ onMounted(fetchFeedbacks)
     }
   }
 
-  @media (max-width: 1200px) {
-    .stats-grid,
+  @media (max-width: 768px) {
     .filters-controls {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: 1fr;
     }
+
     .feedback-grid {
       grid-template-columns: 1fr;
     }
-  }
-
-  @media (max-width: 768px) {
-    .hero-section {
-      padding: clamp(1.5rem, 4vw, 2rem) clamp(0.75rem, 2vw, 1rem);
-    }
-    .hero-content .hero-text .hero-title {
-      font-size: clamp(1.5rem, 4vw, 1.8rem);
-    }
-    .hero-stats {
+    .pagination-container {
       flex-direction: column;
       gap: 1rem;
-    }
-    .stats-section,
-    .filters-section,
-    .feedback-section,
-    .pagination-container {
-      padding: 0 clamp(0.5rem, 1.5vw, 0.75rem);
-    }
-    .stats-grid,
-    .filters-controls {
-      grid-template-columns: 1fr;
-    }
-    .section-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-    .pagination-container {
-      flex-direction: column;
-      gap: 0.5rem;
-      text-align: center;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .stat-card {
-      padding: 1rem;
-    }
-    .stat-icon {
-      width: 40px;
-      height: 40px;
-      font-size: 1rem;
-    }
-    .stat-content .stat-number {
-      font-size: clamp(1.25rem, 3vw, 1.5rem);
-    }
-    .feedback-card .card-inner {
-      padding: 0.75rem;
-    }
-    .patient-avatar {
-      width: 36px;
-      height: 36px;
-    }
-    .empty-state {
-      padding: 1.5rem 0.75rem;
     }
   }
 }

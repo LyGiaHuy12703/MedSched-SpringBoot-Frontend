@@ -100,15 +100,11 @@
 </template>
 <script lang="ts" setup>
 import type { User } from '@/interfaces/user.interface'
-import { onMounted } from 'vue'
 const props = defineProps<{
   userData: User
 }>()
 const userData = props.userData
 
-onMounted(() => {
-  console.log('User data:', userData)
-})
 </script>
 <style scoped lang="scss">
 .detail-user {

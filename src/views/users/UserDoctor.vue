@@ -103,7 +103,7 @@ onMounted(async () => {
   await fetchInitData()
 })
 async function fetchInitData() {
-  await staffStore.fetchAllStaffs(currentPage.value - 1, 6)
+  await staffStore.fetchAllStaffs(currentPage.value - 1, 6, undefined, undefined, 'DOCTOR')
   await departmentStore.fetchDepartments(0, 1000)
   departments.value = departmentStore.departments
   doctors.value = staffStore.staffs
@@ -123,6 +123,7 @@ const performSearch = async () => {
       6,
       hasSpecialty ? selectedSpecialty.value : undefined,
       hasSearch ? searchQuery.value : undefined,
+      'DOCTOR',
     )
     doctors.value = staffStore.staffs
     total.value = staffStore.meta?.total || 0
@@ -213,9 +214,6 @@ const handleBookAppointment = (staff: Staff) => {
 
         &.va-button--preset-secondary {
           border: 1px solid #e2e8f0;
-          &:hover {
-            background: #f7fafc;
-          }
         }
       }
     }
@@ -233,7 +231,6 @@ const handleBookAppointment = (staff: Staff) => {
 
       &:hover {
         transform: translateY(-4px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
       }
     }
   }

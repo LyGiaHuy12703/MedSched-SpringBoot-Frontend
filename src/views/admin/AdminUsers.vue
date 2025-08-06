@@ -1,225 +1,3 @@
-<template>
-  <va-inner-loading :loading="staffStore.loading || userStore.loading">
-    <va-card>
-      <va-card-content>
-        <div class="justify-content-around my-3">
-          <di class="my-3"><h1>Quản lý tài khoản</h1></di>
-        </div>
-        <div class="role-tabs">
-          <va-tabs v-model="activeTab" grow>
-            <va-tab name="users" class="tab">
-              <va-icon name="person" class="tab-icon" />
-              Users
-            </va-tab>
-            <va-tab name="doctor" class="tab">
-              <VaIcon name="local_hospital" class="tab-icon" />
-              Staff
-            </va-tab>
-          </va-tabs>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
-          <va-input
-            v-model="searchQuery"
-            placeholder="Tìm kiếm theo tên, email, vai trò..."
-            clearable
-            class="filter-input"
-            aria-label="Tìm kiếm bác sĩ theo tên"
-          >
-            <template #prependInner>
-              <va-icon name="search" color="#718096" />
-            </template>
-          </va-input>
-
-          <div class="filter-actions">
-            <va-button preset="secondary" @click="resetFilters" class="action-button">
-              Xóa bộ lọc
-            </va-button>
-            <va-button preset="primary" @click="handleSearch" class="action-button">
-              Tìm kiếm
-            </va-button>
-          </div>
-        </div>
-
-        <div v-if="activeTab === 'users'" class="mt-3">
-          <va-data-table
-            :items="users"
-            :columns="columns"
-            hoverable
-            :filter="filter"
-            :filter-method="customFilteringFn"
-            @filtered="filteredCount = $event.items.length"
-          >
-            <template #cell(id)="slotProps">
-              {{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
-            </template>
-            <template #cell(active)="slotProps">
-              <div class="active">
-                <va-switch
-                  v-model="slotProps.rowData.active"
-                  size="small"
-                  color="success"
-                  @change="onSwitchChange(slotProps.rowData)"
-                />
-              </div>
-            </template>
-            <template #cell(avatar)="slotProps">
-              <div class="avatar">
-                <va-avatar :src="slotProps.rowData.avatar || '/defaultAvatar.png'" size="small" />
-              </div>
-            </template>
-            <template #cell(actions)="slotProps">
-              <div class="actions">
-                <VaButton
-                  preset="plain"
-                  icon="visibility"
-                  @click="onShowDetailModal(slotProps.rowData)"
-                />
-              </div>
-            </template>
-          </va-data-table>
-          <div class="my-3 d-flex pagination-container">
-            <VaPagination
-              v-model="currentPage"
-              :total="total"
-              :pages="totalPages"
-              :rows-per-page="pageSize"
-              :rows-per-page-options="[5, 10, 20]"
-              :visible-pages="5"
-              class="mt-6"
-              @update:modelValue="onPageChange"
-            />
-          </div>
-
-          <div class="d-flex">
-            <VaAlert class="!mt-6" color="info" outline>
-              Number of filtered items:
-              <VaChip>{{ filteredCount }}</VaChip>
-            </VaAlert>
-            <VaAlert class="!mt-6" color="info" outline>
-              Total items:
-              <VaChip>{{ total }}</VaChip>
-            </VaAlert>
-          </div>
-        </div>
-        <div v-else>
-          <div class="mb-3">
-            <va-button @click="onShowModalAdd"> Thêm nhân viên</va-button>
-          </div>
-          <va-data-table
-            :items="staffs"
-            :columns="columnsStaffTable"
-            hoverable
-            :filter="filter"
-            :filter-method="customFilteringFn"
-            @filtered="filteredCount = $event.items.length"
-          >
-            <template #cell(id)="slotProps">
-              {{ slotProps.rowIndex + 1 + (currentPageStaff - 1) * pageSizeStaff }}
-            </template>
-            <template #cell(name)="slotProps">
-              <div>
-                <p>{{ slotProps.rowData.user.name }}</p>
-              </div>
-            </template>
-            <template #cell(email)="slotProps">
-              <div>
-                <p>{{ slotProps.rowData.user.email }}</p>
-              </div>
-            </template>
-            <template #cell(roles)="slotProps">
-              <div>
-                <p>
-                  [{{
-                    slotProps.rowData.roles.map((role) => role.name).join(', ') ||
-                    'Chưa có vai trò'
-                  }}]
-                </p>
-              </div>
-            </template>
-            <template #cell(active)="slotProps">
-              <div class="active">
-                <va-switch
-                  v-model="slotProps.rowData.user.active"
-                  size="small"
-                  color="success"
-                  @change="onSwitchChange(slotProps.rowData.user)"
-                />
-              </div>
-            </template>
-            <template #cell(avatar)="slotProps">
-              <div class="avatar">
-                <va-avatar
-                  :src="slotProps.rowData.user.avatar || '/defaultAvatar.png'"
-                  size="small"
-                />
-              </div>
-            </template>
-            <template #cell(actions)="slotProps">
-              <div class="actions">
-                <VaButton
-                  preset="plain"
-                  icon="visibility"
-                  @click="onShowDetailStaffModal(slotProps.rowData)"
-                />
-                <VaButton
-                  preset="plain"
-                  icon="edit"
-                  class="ml-3"
-                  @click="onShowEditStaffModal(slotProps.rowData)"
-                />
-              </div>
-            </template>
-          </va-data-table>
-          <div class="my-3 d-flex pagination-container">
-            <VaPagination
-              v-model="currentPageStaff"
-              :total="totalStaff"
-              :pages="totalPagesStaff"
-              :rows-per-page="pageSizeStaff"
-              :rows-per-page-options="[5, 10, 20]"
-              :visible-pages="5"
-              class="mt-6"
-              @update:modelValue="onPageChange"
-            />
-          </div>
-
-          <div class="d-flex">
-            <VaAlert class="!mt-6" color="info" outline>
-              Number of filtered items:
-              <VaChip>{{ filteredCount }}</VaChip>
-            </VaAlert>
-            <VaAlert class="!mt-6" color="info" outline>
-              Total items:
-              <VaChip>{{ totalStaff }}</VaChip>
-            </VaAlert>
-          </div>
-        </div>
-      </va-card-content>
-    </va-card>
-  </va-inner-loading>
-  <va-modal v-model="isShowDetailStaffModal" hide-default-actions @close="onCloseDetailStaffModal">
-    <DetailStaff
-      v-if="isShowDetailStaffModal && selectedStaffDetail"
-      :staff-data="selectedStaffDetail"
-      @close-modal-staff="onCloseDetailStaffModal"
-    />
-  </va-modal>
-  <va-modal v-model="isShowDetailModal" hide-default-actions @close="onCloseDetailModal">
-    <DetailUser
-      v-if="isShowDetailModal && selectedUserDetail"
-      :userData="selectedUserDetail"
-      @close-modal="onCloseDetailModal"
-    />
-  </va-modal>
-  <va-modal v-model="isShowModalConfirm" hide-default-actions>
-    <DeleteConfirm
-      :title="'Chuyển trạng thái người dùng'"
-      :message="'Xác nhận chuyển trạng thái người dùng?'"
-      @close-confirm="onCloseAllModal"
-      @confirm="changeStatusUser"
-    />
-  </va-modal>
-</template>
 <script setup lang="ts">
 import DeleteConfirm from '@/components/DeleteConfirm.vue'
 import DetailStaff from '@/components/staff/DetailStaff.vue'
@@ -239,10 +17,10 @@ const staffStore = useStaffStore()
 const staffs = ref<Staff[]>([])
 const users = ref<User[]>([])
 const columns = [
-  { key: 'id', label: 'STT' },
+  { key: 'id', label: 'STT', width: '60px' },
   { key: 'name', label: 'Họ & tên' },
   { key: 'email', label: 'Email' },
-  { key: 'age', label: 'Tuổi' },
+  { key: 'age', label: 'Tuổi', width: '80px' },
   { key: 'phone', label: 'Số điện thoại' },
   { key: 'address', label: 'Địa chỉ' },
   { key: 'avatar', label: 'Ảnh đại diện' },
@@ -250,7 +28,7 @@ const columns = [
   { key: 'actions', label: 'Hành động', sortable: false },
 ]
 const columnsStaffTable = [
-  { key: 'id', label: 'STT' },
+  { key: 'id', label: 'STT', width: '60px' },
   { key: 'name', label: 'Họ & tên' },
   { key: 'email', label: 'Email' },
   { key: 'roles', label: 'Vai trò' },
@@ -258,6 +36,7 @@ const columnsStaffTable = [
   { key: 'active', label: 'Trạng thái' },
   { key: 'actions', label: 'Hành động', sortable: false },
 ]
+
 /**
  * Pagination
  */
@@ -276,7 +55,6 @@ watch(currentPageStaff, async () => {
   await fetchAllStaffs()
 })
 watch(activeTab, async () => {
-  // Reset current page về 1 khi chuyển tab
   currentPage.value = 1
   currentPageStaff.value = 1
 
@@ -299,7 +77,6 @@ watch(activeTab, async () => {
     totalPagesStaff.value = 0
   }
 
-  // Gọi lại fetch dữ liệu cho tab hiện tại
   if (activeTab.value === 'users') {
     await fetchAllUsers()
   } else {
@@ -307,7 +84,7 @@ watch(activeTab, async () => {
   }
 })
 async function fetchAllUsers() {
-  await userStore.fetchUsers(currentPage.value - 1, pageSize.value)
+  await userStore.fetchUsers(currentPage.value - 1, 5)
   users.value = userStore.users
   if (userStore.meta) {
     currentPage.value = userStore.meta.page
@@ -331,20 +108,23 @@ onMounted(async () => {
   await fetchAllStaffs()
 })
 async function onPageChange(page: number) {
-  currentPage.value = page
-  await fetchAllUsers()
-  await fetchAllStaffs()
+  if (activeTab.value === 'users') {
+    currentPage.value = page
+    await fetchAllUsers()
+  } else {
+    currentPageStaff.value = page
+    await fetchAllStaffs()
+  }
 }
-/**==========END=========== */
 
 /**
- * filter
+ * Filter
  */
-
 const searchQuery = ref('')
 const resetFilters = () => {
   searchQuery.value = ''
   currentPage.value = 1
+  currentPageStaff.value = 1
   if (activeTab.value === 'users') {
     fetchAllUsers()
   } else {
@@ -354,6 +134,7 @@ const resetFilters = () => {
 }
 const handleSearch = async () => {
   currentPage.value = 1
+  currentPageStaff.value = 1
   await performSearch()
 }
 const performSearch = async () => {
@@ -380,9 +161,8 @@ const performSearch = async () => {
 }
 const filteredCount = ref(users.value.length)
 
-/**===========END============== */
 /**
- * UPDATE STATUS
+ * Update Status
  */
 const isShowModalConfirm = ref(false)
 const idUpdateStatus = ref('')
@@ -390,7 +170,7 @@ const selectedUserChangeData = reactive<RequestUpdateStatusUser>({
   status: true,
 })
 function onSwitchChange(data: User) {
-  isShowModalConfirm.value = !isShowModalConfirm.value
+  isShowModalConfirm.value = true
   idUpdateStatus.value = data.id
   selectedUserChangeData.status = data.active
 }
@@ -402,20 +182,22 @@ const changeStatusUser = async () => {
     idUpdateStatus.value = ''
     await fetchAllUsers()
   } catch (error: unknown) {
-    toast.error(`Không thể chuyển đổi trạng thái: ${error.message || 'Lỗi không xác định'}`)
+    toast.error(
+      `Không thể chuyển đổi trạng thái: ${(error as Error).message || 'Lỗi không xác định'}`,
+    )
   }
 }
-/**===========END============== */
+
 /**
- * ADD STAFF
+ * Add Staff
  */
 const isShowModalAdd = ref(false)
 function onShowModalAdd() {
   router.push({ name: 'AdminUsersAddStaff' })
 }
-/**============END============ */
+
 /**
- * EDIT EVENT
+ * Edit Event
  */
 function onShowEditStaffModal(data: Staff) {
   router.push({
@@ -423,9 +205,9 @@ function onShowEditStaffModal(data: Staff) {
     params: { id: data.id },
   })
 }
-/**===========END============== */
+
 /**
- * DETAIL EVENT
+ * Detail Event
  */
 const isShowDetailModal = ref(false)
 const isShowDetailStaffModal = ref(false)
@@ -447,32 +229,486 @@ function onCloseDetailStaffModal() {
   isShowDetailStaffModal.value = false
   selectedStaffDetail.value = null
 }
-
 async function onCloseAllModal() {
   isShowModalAdd.value = false
   isShowModalConfirm.value = false
   selectedUserChangeData.status = true
-  // await fetchAllUsers()
-  // await fetchAllStaffs()
 }
 </script>
+
+<template>
+  <va-inner-loading :loading="staffStore.loading || userStore.loading">
+    <va-card class="shadow-sm">
+      <va-card-content class="p-6">
+        <h1 class="text-3xl font-semibold text-gray-800 text-center mb-6">Quản lý tài khoản</h1>
+
+        <!-- TABS -->
+        <div class="role-tabs mb-6">
+          <va-tabs v-model="activeTab" grow class="custom-tabs">
+            <va-tab name="users" class="tab">
+              <va-icon name="person" class="tab-icon mr-2" size="medium" />
+              Người dùng
+            </va-tab>
+            <va-tab name="doctor" class="tab">
+              <va-icon name="local_hospital" class="tab-icon mr-2" size="medium" />
+              Nhân viên
+            </va-tab>
+          </va-tabs>
+        </div>
+
+        <!-- BỘ LỌC VÀ TÌM KIẾM -->
+        <div class="d-flex gap-4 mb-6 align-center">
+          <va-input
+            v-model="searchQuery"
+            placeholder="Tìm kiếm theo tên, email, vai trò..."
+            clearable
+            class="input-field flex-grow"
+            aria-label="Tìm kiếm theo tên, email, vai trò"
+          >
+            <template #prependInner>
+              <va-icon name="search" color="text-gray-600" size="medium" />
+            </template>
+          </va-input>
+          <va-button preset="secondary" class="action-button px-6 py-2" @click="resetFilters">
+            Xóa bộ lọc
+          </va-button>
+          <va-button preset="primary" class="action-button px-6 py-2" @click="handleSearch">
+            Tìm kiếm
+          </va-button>
+        </div>
+
+        <!-- TAB NGƯỜI DÙNG -->
+        <div v-if="activeTab === 'users'" class="mt-6">
+          <va-data-table
+            :items="users"
+            :columns="columns"
+            hoverable
+            :filter="searchQuery"
+            :filter-method="customFilteringFn"
+            class="custom-table"
+            no-data-html="<div class='text-center text-gray-500 py-4'>Không có dữ liệu.</div>"
+            @filtered="filteredCount = $event.items.length"
+          >
+            <template #cell(id)="{ rowIndex }">
+              {{ rowIndex + 1 + (currentPage - 1) * pageSize }}
+            </template>
+            <template #cell(active)="{ rowData }">
+              <div class="d-flex justify-center">
+                <va-switch
+                  v-model="rowData.active"
+                  size="medium"
+                  color="success"
+                  @change="onSwitchChange(rowData)"
+                />
+              </div>
+            </template>
+            <template #cell(avatar)="{ rowData }">
+              <div class="d-flex justify-center">
+                <va-avatar :src="rowData.avatar || '/defaultAvatar.png'" size="medium" />
+              </div>
+            </template>
+            <template #cell(actions)="{ rowData }">
+              <div class="d-flex justify-center gap-2">
+                <va-button
+                  preset="primary"
+                  icon="visibility"
+                  size="small"
+                  class="action-button px-3 py-2"
+                  @click="onShowDetailModal(rowData)"
+                  title="Xem chi tiết"
+                  >Xem chi tiết</va-button
+                >
+              </div>
+            </template>
+          </va-data-table>
+
+          <div class="d-flex justify-end my-2 pagination-container">
+            <va-pagination
+              v-model="currentPage"
+              :total="total"
+              :pages="totalPages"
+              :rows-per-page="pageSize"
+              :rows-per-page-options="[5, 10, 20]"
+              :visible-pages="5"
+              class="custom-pagination"
+              @update:modelValue="onPageChange"
+            />
+          </div>
+
+          <div class="d-flex gap-4 mt-6">
+            <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+              Số mục đã lọc: <va-chip color="danger" outline>{{ filteredCount }}</va-chip>
+            </va-alert>
+            <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+              Tổng số mục: <va-chip color="danger" outline>{{ total }}</va-chip>
+            </va-alert>
+          </div>
+        </div>
+
+        <!-- TAB NHÂN VIÊN -->
+        <div v-else class="mt-6">
+          <div class="mb-2">
+            <va-button preset="primary" class="action-button px-6 py-2" @click="onShowModalAdd">
+              Thêm nhân viên
+            </va-button>
+          </div>
+          <va-data-table
+            :items="staffs"
+            :columns="columnsStaffTable"
+            hoverable
+            :filter="searchQuery"
+            :filter-method="customFilteringFn"
+            class="custom-table"
+            no-data-html="<div class='text-center text-gray-500 py-4'>Không có dữ liệu.</div>"
+            @filtered="filteredCount = $event.items.length"
+          >
+            <template #cell(id)="{ rowIndex }">
+              {{ rowIndex + 1 + (currentPageStaff - 1) * pageSizeStaff }}
+            </template>
+            <template #cell(name)="{ rowData }">
+              <div class="font-semibold text-gray-800">{{ rowData.user.name || 'N/A' }}</div>
+            </template>
+            <template #cell(email)="{ rowData }">
+              <div class="text-gray-700">{{ rowData.user.email || 'N/A' }}</div>
+            </template>
+            <template #cell(roles)="{ rowData }">
+              <div class="text-gray-700">
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+                  {{ rowData.roles[0] || 'Chưa có vai trò' }}
+                </span>
+              </div>
+            </template>
+            <template #cell(active)="{ rowData }">
+              <div class="d-flex justify-center">
+                <va-switch
+                  v-model="rowData.user.active"
+                  size="medium"
+                  color="success"
+                  @change="onSwitchChange(rowData.user)"
+                />
+              </div>
+            </template>
+            <template #cell(avatar)="{ rowData }">
+              <div class="d-flex justify-center">
+                <va-avatar :src="rowData.user.avatar || '/defaultAvatar.png'" size="medium" />
+              </div>
+            </template>
+            <template #cell(actions)="{ rowData }">
+              <div class="d-flex justify-center gap-2">
+                <va-button
+                  preset="primary"
+                  size="small"
+                  icon="visibility"
+                  class="action-button px-3 py-2"
+                  @click="onShowDetailStaffModal(rowData)"
+                  title="Xem chi tiết"
+                  >Xem chi tiết</va-button
+                >
+                <va-button
+                  preset="primary"
+                  icon="edit"
+                  size="small"
+                  color="warning"
+                  class="action-button px-3 py-2"
+                  @click="onShowEditStaffModal(rowData)"
+                  title="Chỉnh sửa"
+                  >Chỉnh sửa</va-button
+                >
+              </div>
+            </template>
+          </va-data-table>
+
+          <div class="d-flex justify-end my-2 pagination-container">
+            <va-pagination
+              v-model="currentPageStaff"
+              :total="totalStaff"
+              :pages="totalPagesStaff"
+              :rows-per-page="pageSizeStaff"
+              :rows-per-page-options="[5, 10, 20]"
+              :visible-pages="5"
+              class="custom-pagination"
+              @update:modelValue="onPageChange"
+            />
+          </div>
+
+          <div class="d-flex gap-4 mt-6">
+            <va-alert color="info" class="bg-blue-50 border-blue-200">
+              Số mục đã lọc: <va-chip color="info">{{ filteredCount }}</va-chip>
+            </va-alert>
+            <va-alert color="info" class="bg-blue-50 border-blue-200">
+              Tổng số mục: <va-chip color="info">{{ totalStaff }}</va-chip>
+            </va-alert>
+          </div>
+        </div>
+      </va-card-content>
+    </va-card>
+  </va-inner-loading>
+
+  <!-- MODAL CHI TIẾT NGƯỜI DÙNG -->
+  <va-modal v-model="isShowDetailModal" hide-default-actions max-width="800px" class="custom-modal">
+    <template #header>
+      <h2
+        class="text-2xl font-semibold text-gray-800 d-flex align-center bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-t-xl"
+      >
+        <va-icon name="person" size="large" class="mr-4 text-blue-600" />
+        Chi tiết người dùng
+      </h2>
+    </template>
+    <div class="p-8">
+      <DetailUser
+        v-if="isShowDetailModal && selectedUserDetail"
+        :userData="selectedUserDetail"
+        @close-modal="onCloseDetailModal"
+      />
+      <div class="flex justify-end mt-6">
+        <va-button
+          preset="secondary"
+          class="px-8 py-3 action-button text-gray-600 text-base"
+          @click="onCloseDetailModal"
+        >
+          Đóng
+        </va-button>
+      </div>
+    </div>
+  </va-modal>
+
+  <!-- MODAL CHI TIẾT NHÂN VIÊN -->
+  <va-modal
+    v-model="isShowDetailStaffModal"
+    hide-default-actions
+    max-width="800px"
+    class="custom-modal"
+  >
+    <template #header>
+      <h2
+        class="text-2xl font-semibold text-gray-800 d-flex align-center bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-t-xl"
+      >
+        <va-icon name="local_hospital" size="large" class="mr-4 text-blue-600" />
+        Chi tiết nhân viên
+      </h2>
+    </template>
+    <div class="p-8">
+      <DetailStaff
+        v-if="isShowDetailStaffModal && selectedStaffDetail"
+        :staff-data="selectedStaffDetail"
+        @close-modal-staff="onCloseDetailStaffModal"
+      />
+      <div class="flex justify-end mt-6">
+        <va-button
+          preset="secondary"
+          class="px-8 py-3 action-button text-gray-600 text-base"
+          @click="onCloseDetailStaffModal"
+        >
+          Đóng
+        </va-button>
+      </div>
+    </div>
+  </va-modal>
+
+  <!-- MODAL XÁC NHẬN TRẠNG THÁI -->
+  <va-modal
+    v-model="isShowModalConfirm"
+    hide-default-actions
+    max-width="600px"
+    class="custom-modal"
+  >
+    <template #header>
+      <h2
+        class="text-2xl font-semibold text-gray-800 d-flex align-center bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-t-xl"
+      >
+        <va-icon name="check_circle" size="large" class="mr-4 text-green-700" />
+        Xác nhận chuyển trạng thái
+      </h2>
+    </template>
+    <div class="p-8">
+      <DeleteConfirm
+        :title="'Chuyển trạng thái người dùng'"
+        :message="'Bạn có chắc chắn muốn chuyển trạng thái người dùng?'"
+        confirm-text="Xác nhận"
+        @close-confirm="onCloseAllModal"
+        @confirm="changeStatusUser"
+        class="confirm-modal"
+      />
+    </div>
+  </va-modal>
+</template>
+
 <style scoped lang="scss">
+.input-field {
+  :deep(.va-input-wrapper) {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+    &:hover {
+      border-color: var(--va-primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  }
+  :deep(.va-input-wrapper__field) {
+    font-size: 1rem;
+    color: #1e293b;
+  }
+}
+
+.custom-tabs {
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  padding: 0.25rem;
+  :deep(.va-tabs__container) {
+    gap: 0.5rem;
+  }
+  :deep(.va-tab) {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #4b5563;
+    &:hover {
+      background-color: #e5e7eb;
+      transform: scale(1.05);
+    }
+    &.va-tab--active {
+      background-color: var(--va-primary);
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+  .tab-icon {
+    color: var(--va-primary);
+  }
+}
+
+.custom-table {
+  border-radius: 12px;
+  /* overflow: hidden; */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  :deep(.va-data-table__table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  :deep(.va-data-table__table-thead) {
+    background-color: #e5e7eb !important;
+    th {
+      font-weight: 600;
+      color: #1e293b;
+      padding: 1.25rem;
+      border-bottom: 2px solid #d1d5db;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+  }
+  :deep(.va-data-table__table-row) {
+    transition: background-color 0.3s ease;
+    &:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    &:hover {
+      background-color: #d1d5db !important;
+    }
+    td {
+      padding: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+      font-size: 1rem;
+    }
+  }
+}
+
+.action-button {
+  :deep(.va-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
 .pagination-container {
-  justify-content: end;
-  margin-top: 40px;
+  justify-content: flex-end;
 }
-:deep(.va-data-table__table-thead) {
-  background-color: #ecf0f1 !important; /* đổi màu header */
+
+.custom-pagination {
+  :deep(.va-pagination__item) {
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+    &:hover {
+      background-color: #e5e7eb;
+      transform: scale(1.1);
+    }
+    &.va-pagination__item--active {
+      background-color: var(--va-primary);
+      color: #ffffff;
+    }
+  }
 }
-:deep(.va-data-table__table-td:has(.avatar)) {
-  display: flex;
-  justify-content: center !important;
+
+.custom-modal {
+  :deep(.va-modal__inner) {
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    background-color: #ffffff;
+  }
+  :deep(.va-modal__content) {
+    padding: 0;
+  }
 }
-:deep(.va-data-table__table-td:has(.active)) {
-  justify-content: center !important;
+
+.confirm-modal {
+  :deep(.va-card) {
+    background-color: #f0fdf4;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+  }
+  :deep(h2) {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #166534;
+    margin-bottom: 1.5rem;
+  }
+  :deep(p) {
+    font-size: 1.125rem;
+    color: #4b5563;
+    margin-bottom: 2rem;
+  }
+  :deep(.va-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
 }
-.actions {
-  display: flex;
-  justify-content: center !important;
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.text-gray-600 {
+  color: #4b5563;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.text-gray-800 {
+  color: #1e293b;
+}
+:deep(.va-data-table__table-th) {
+  --va-data-table-align: center !important;
 }
 </style>

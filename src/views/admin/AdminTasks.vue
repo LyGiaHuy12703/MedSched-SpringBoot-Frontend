@@ -1,157 +1,112 @@
 <template>
-  <va-inner-loading :loading="scheduleStore.loading" class="doctor-shift-page">
-    <!-- Filters Card -->
-    <va-card class="mb-4">
-      <va-card-title>Phân Công Lịch Trực</va-card-title>
+  <va-inner-loading :loading="scheduleStore.loading" class="schedule-calendar-page">
+    <!-- Header -->
+    <div class="calendar-header">
+      <div class="header-text">
+        <h2 class="va-h4 text-primary">Lịch Phân Công Trực</h2>
+        <p class="text-muted">Tổng quan lịch trực của nhân viên theo tháng, tuần, ngày.</p>
+      </div>
+      <div class="header-actions">
+        <va-button color="success" icon="add" @click="openAssignModal()">Phân Công Mới</va-button>
+      </div>
+    </div>
+    <!-- Calendar -->
+    <va-card class="calendar-card">
       <va-card-content>
-        <div class="filters-container">
-          <div class="filter-group">
-            <va-input v-model="filterDate" type="date" label="Ngày trực" class="date-input" />
-            <va-select
-              v-model="filterDepartment"
-              label="Lọc theo bộ phận"
-              :options="['Tất cả', ...departmentStore.departments.map((dep) => dep.name)]"
-              class="department-select"
-            />
-          </div>
-          <va-input
-            v-model="searchQuery"
-            placeholder="Tìm kiếm nhân viên, bộ phận..."
-            class="search-input"
-          >
-            <template #prepend>
-              <va-icon name="search" />
-            </template>
-          </va-input>
-        </div>
+        <FullCalendar :options="calendarOptions" />
       </va-card-content>
     </va-card>
 
-    <div class="schedule-container">
-      <!-- Assignment Form Card -->
-      <va-card class="shift-assignment-card">
-        <va-card-title>{{
-          formState.id ? 'Cập Nhật Ca Trực' : 'Phân Công Ca Trực Mới'
-        }}</va-card-title>
-        <va-card-content>
-          <form @submit.prevent="handleSubmit" class="assignment-form">
-            <va-select
-              v-model="formState.departmentId"
-              label="Chọn bộ phận"
-              :options="departmentOptions"
-              text-by="text"
-              value-by="value"
-              class="mb-3"
-              required
-              @update:modelValue="onDepartmentChangeInForm"
-            />
-            <va-select
-              v-model="formState.staffId"
-              label="Chọn nhân viên"
-              :options="staffOptionsForForm"
-              text-by="text"
-              value-by="value"
-              class="mb-3"
-              required
-              :disabled="!formState.departmentId"
-            />
-            <va-input
-              v-model="formState.dayWork"
-              type="date"
-              label="Ngày trực"
-              class="mb-3"
-              required
-            />
-            <va-select
-              v-model="formState.shiftValue"
-              label="Chọn ca trực"
-              :options="shiftTimes"
-              text-by="label"
-              value-by="value"
-              class="mb-3"
-              required
-            />
-            <div class="d-flex justify-space-between mt-3">
-              <va-button type="submit" preset="primary">{{
-                formState.id ? 'Cập nhật' : 'Phân công'
-              }}</va-button>
-              <va-button v-if="formState.id" @click="resetForm" preset="secondary">Hủy</va-button>
-            </div>
-          </form>
-        </va-card-content>
-      </va-card>
-
-      <!-- Schedule Display Card -->
-      <va-card class="shift-schedule-card">
-        <va-card-title>Lịch Trực {{ formattedDate }}</va-card-title>
-        <va-card-content>
-          <div class="schedule-grid">
-            <div class="schedule-row header">
-              <div class="schedule-cell">Ca trực</div>
-              <div class="schedule-cell">Thời gian</div>
-              <div class="schedule-cell">Nhân viên trực</div>
-              <div class="schedule-cell">Trạng thái</div>
-              <div class="schedule-cell">Thao tác</div>
-            </div>
-            <div v-for="item in paginatedSchedule" :key="item.id" class="schedule-row">
-              <div class="schedule-cell">
-                <va-badge :color="item.shiftBadgeColor" :text="item.shiftLabel" />
-              </div>
-              <div class="schedule-cell">{{ item.startTime }} - {{ item.endTime }}</div>
-              <div class="schedule-cell">
-                <div class="assigned-doctor">
-                  <img :src="item.staff.avatar" :alt="item.staff.name" class="doctor-avatar" />
-                  <div class="doctor-info">
-                    <div class="doctor-name">{{ item.staff.name }}</div>
-                    <div class="doctor-department">{{ item.departmentName }}</div>
-                  </div>
-                </div>
-              </div>
-              <div class="schedule-cell">
-                {{ getChangeStatusName(item.status) }}
-              </div>
-              <div class="schedule-cell actions">
-                <va-button
-                  preset="primary"
-                  icon="edit"
-                  size="small"
-                  @click="handleEdit(item)"
-                  class="mr-2"
-                />
-                <va-button
-                  preset="danger"
-                  icon="delete"
-                  size="small"
-                  @click="showDeleteConfirm(item.id)"
-                />
-              </div>
-            </div>
-            <div v-if="paginatedSchedule.length === 0" class="schedule-row empty">
-              <div class="schedule-cell" :colspan="5">Không có ca trực nào phù hợp với bộ lọc.</div>
-            </div>
+    <!-- Assign Modal -->
+    <va-modal
+      v-model="isAssignModalVisible"
+      hide-default-actions
+      size="medium"
+      :before-close="resetForm"
+      class="custom-modal"
+    >
+      <template #header>
+        <h3 class="va-h5 text-info">
+          {{ formState.id ? 'Cập Nhật Ca Trực' : 'Phân Công Ca Trực Mới' }}
+        </h3>
+      </template>
+      <div class="modal-form">
+        <p class="text-muted text-sm mb-4">Yêu cầu sẽ được gửi đến nhân viên để chờ xác nhận.</p>
+        <va-form ref="formRef" @submit.prevent="handleSubmit">
+          <va-input
+            v-model="formState.dayWork"
+            type="date"
+            label="Ngày Trực"
+            class="mb-4"
+            :rules="[validators.required]"
+            color="info"
+          />
+          <va-select
+            v-model="formState.shiftValue"
+            label="Chọn Ca Trực"
+            :options="shiftTimes"
+            text-by="label"
+            value-by="value"
+            class="mb-4"
+            :rules="[validators.required]"
+            color="info"
+          />
+          <va-divider class="my-4" />
+          <p class="text-muted mb-2">Lọc Nhân Viên (Tùy Chọn)</p>
+          <va-select
+            v-model="formState.departmentId"
+            :options="departmentOptions"
+            text-by="text"
+            value-by="value"
+            class="mb-4"
+            clearable
+            color="info"
+          />
+          <va-select
+            v-model="formState.staffIds"
+            label="Gửi Yêu Cầu Đến Nhân Viên"
+            :options="staffOptionsForForm"
+            text-by="text"
+            value-by="value"
+            class="mb-4"
+            multiple
+            :rules="[validators.requiredArray]"
+            placeholder="Chọn ít nhất một nhân viên"
+            color="info"
+          >
+            <template #content="{ value }">
+              <va-chip
+                v-for="staff in value"
+                :key="staff.value"
+                size="small"
+                class="mr-1 mb-1"
+                outline
+                closable
+                color="info"
+                @update:modelValue="removeStaffFromSelection(staff.value)"
+              >
+                {{ staff.text }}
+              </va-chip>
+            </template>
+          </va-select>
+          <div class="d-flex justify-end mt-4">
+            <va-button @click="isAssignModalVisible = false" preset="secondary" class="mr-2">
+              Hủy
+            </va-button>
+            <va-button type="submit" color="success" :loading="isSubmitting">
+              {{ formState.id ? 'Cập Nhật' : 'Gửi Yêu Cầu' }}
+            </va-button>
           </div>
-          <!-- Pagination Component -->
-          <div class="pagination-container" v-if="filteredSchedule.length > itemsPerPage">
-            <va-pagination
-              v-model="currentPage"
-              :total="filteredSchedule.length"
-              :page-size="itemsPerPage"
-              :show-total="true"
-              :visible-pages="5"
-              class="mt-5"
-              @update:modelValue="handlePageChange"
-            />
-          </div>
-        </va-card-content>
-      </va-card>
-    </div>
+        </va-form>
+      </div>
+    </va-modal>
 
     <!-- Delete Confirmation Modal -->
-    <va-modal v-model="isDeleteModalVisible" hide-default-actions>
+    <va-modal v-model="isDeleteModalVisible" hide-default-actions class="custom-modal">
       <DeleteConfirm
-        title="Xác nhận xóa lịch trực"
-        message="Bạn có chắc chắn muốn xóa vĩnh viễn lịch trực này không?"
-        @close-confirm="cancelDelete"
+        title="Xác Nhận Xóa Lịch Trực"
+        message="Bạn có chắc chắn muốn xóa vĩnh viễn lịch trực này và tất cả các yêu cầu đã gửi cho nhân viên?"
+        @close-confirm="isDeleteModalVisible = false"
         @confirm="confirmDelete"
       />
     </va-modal>
@@ -159,202 +114,300 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, reactive, watch } from 'vue'
-import type { DoctorShiftCreateRequest } from '@/interfaces/doctorShift.interfaces'
+// ... Toàn bộ phần script của bạn giữ nguyên ...
+import { computed, onMounted, ref, reactive } from 'vue'
+import { toast } from 'vue3-toastify'
+import FullCalendar, {
+  CalendarOptions,
+  EventContentArg,
+  EventClickArg,
+  DateSelectArg,
+} from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import tippy, { Instance as TippyInstance } from 'tippy.js'
+import 'tippy.js/dist/tippy.css'
+import 'tippy.js/themes/light-border.css'
+import DeleteConfirm from '@/components/DeleteConfirm.vue'
 import { useStaffStore } from '@/stores/staff.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { useScheduleStore } from '@/stores/schedule.store'
-import { toast } from 'vue3-toastify'
-import DeleteConfirm from '@/components/DeleteConfirm.vue'
+import type {
+  DoctorShift,
+  DoctorShiftCreateRequest,
+  DoctorShiftUpdateRequest,
+} from '@/interfaces/doctorShift.interfaces'
+import type { Staff } from '@/interfaces/staff.interface'
 
-// --- Constants ---
+// Interfaces
+interface StaffWithPivot extends Staff {
+  pivot_status: 'PENDING' | 'APPROVED' | 'CANCELED'
+}
+
+interface DoctorShiftWithPivot extends DoctorShift {
+  staffs: StaffWithPivot[]
+}
+
+interface FormState {
+  id?: string
+  departmentId: string
+  staffIds: string[]
+  shiftValue: 'morning' | 'afternoon' | 'night' | 'overnight'
+  dayWork: string
+}
+
+// Constants
 const shiftTimes = [
-  { value: 'morning', start: '06:00:00', end: '14:00:00', label: 'Ca sáng', color: 'primary' },
-  { value: 'afternoon', start: '14:00:00', end: '22:00:00', label: 'Ca chiều', color: 'warning' },
-  { value: 'night', start: '22:00:00', end: '06:00:00', label: 'Ca đêm', color: 'info' },
-]
+  {
+    value: 'morning',
+    start: '06:00:00',
+    end: '11:30:00',
+    label: 'Ca Sáng',
+    className: 'morning-shift',
+  },
+  {
+    value: 'afternoon',
+    start: '13:00:00',
+    end: '17:00:00',
+    label: 'Ca Chiều',
+    className: 'afternoon-shift',
+  },
+  {
+    value: 'night',
+    start: '17:00:00',
+    end: '22:00:00',
+    label: 'Ca Tối',
+    className: 'night-shift',
+  },
+  {
+    value: 'overnight',
+    start: '22:00:00',
+    end: '06:00:00',
+    label: 'Ca Đêm',
+    className: 'overnight-shift',
+  },
+] as const
 
-// --- Store Initialization ---
+// Stores
 const staffStore = useStaffStore()
 const departmentStore = useDepartmentStore()
 const scheduleStore = useScheduleStore()
 
-// --- Component State ---
-const filterDate = ref(new Date().toISOString().slice(0, 10))
-const filterDepartment = ref('Tất cả')
-const searchQuery = ref('')
-const currentPage = ref(1)
-const itemsPerPage = ref(3)
-const formState = reactive({
-  id: undefined as string | undefined,
-  departmentId: '',
-  staffId: '' as string,
-  shiftValue: 'morning' as 'morning' | 'afternoon' | 'night',
-  dayWork: new Date().toISOString().slice(0, 10),
-})
+// State
+const isSubmitting = ref(false)
+const isAssignModalVisible = ref(false)
 const isDeleteModalVisible = ref(false)
 const scheduleIdToDelete = ref<string | null>(null)
+const formRef = ref<any>(null)
+const formState = reactive<FormState>({
+  id: undefined,
+  departmentId: '',
+  staffIds: [],
+  shiftValue: 'morning',
+  dayWork: new Date().toISOString().slice(0, 10),
+})
 
-// --- Computed Properties ---
-const formattedDate = computed(() =>
-  new Date(filterDate.value).toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }),
-)
+// Validators
+const validators = {
+  required: (v: any) => !!v || 'Trường này là bắt buộc',
+  requiredArray: (v: any[]) => v.length > 0 || 'Vui lòng chọn ít nhất một nhân viên',
+}
 
+// Computed
 const departmentOptions = computed(() =>
   departmentStore.departments.map((dep) => ({ text: dep.name, value: dep.id })),
 )
 
 const staffOptionsForForm = computed(() => {
-  if (!formState.departmentId) return []
-  return staffStore.staffs
-    .filter((staff) => staff.departments?.id === formState.departmentId)
-    .map((staff) => ({ text: staff.user.name, value: staff.id }))
+  let staffList = staffStore.staffs
+  if (formState.departmentId) {
+    staffList = staffList.filter((staff) => staff.departments?.id === formState.departmentId)
+  }
+  return staffList.map((staff) => ({ text: staff.user.name, value: staff.id }))
 })
 
-const filteredSchedule = computed(() => {
-  const query = searchQuery.value.toLowerCase().trim()
-  const result = scheduleStore.schedules
-    .filter((s) => s.dayWork === filterDate.value)
-    .flatMap((schedule) => {
-      const departmentId = schedule.departmentDTO?.id
-      const department = departmentStore.departments.find((d) => d.id === departmentId)
-      const shiftInfo = shiftTimes.find((st) => st.start === schedule.startTime) || shiftTimes[0]
+const calendarEvents = computed(() => {
+  return (scheduleStore.schedules as DoctorShiftWithPivot[]).map((shift) => {
+    const shiftInfo = getShiftInfo(shift)
+    const isOvernight = shift.endTime < shift.startTime
+    const endDate = new Date(shift.dayWork)
+    if (isOvernight) endDate.setDate(endDate.getDate() + 1)
 
-      if (!Array.isArray(schedule.staffs) || schedule.staffs.length === 0) return []
+    return {
+      id: shift.id,
+      title: shiftInfo.label,
+      start: `${shift.dayWork}T${shift.startTime}`,
+      end: `${endDate.toISOString().slice(0, 10)}T${shift.endTime}`,
+      classNames: [shiftInfo.className],
+      borderColor: 'transparent',
+      extendedProps: { shiftData: shift },
+    }
+  })
+})
 
-      return schedule.staffs.map((staffInSchedule) => {
-        const staffId = staffInSchedule.id || staffInSchedule
-        const staff = staffStore.staffs.find((s) => s.id === staffId) || {
-          id: staffId,
-          user: { name: 'Nhân viên không xác định', avatar: '/defaultAvatar.png' },
-        }
+const calendarOptions = computed(
+  (): CalendarOptions => ({
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay',
+    },
+    locale: 'vi',
+    buttonText: { today: 'Hôm nay', month: 'Tháng', week: 'Tuần', day: 'Ngày' },
+    weekends: true,
+    editable: false,
+    selectable: true,
+    events: calendarEvents.value,
+    eventClick: handleEventClick,
+    select: handleDateSelect,
+    eventContent: (arg: EventContentArg) => {
+      const shiftData = arg.event.extendedProps.shiftData as DoctorShiftWithPivot
+      const staffAvatarsHtml = shiftData.staffs
+        .slice(0, 3)
+        .map(
+          (staff) => `
+        <div class="fc-event-avatar-wrapper">
+          <img src="${staff.user?.avatar || '/defaultAvatar.png'}" class="fc-event-avatar" />
+          <div class="fc-event-avatar-status ${getStaffStatusColor(staff.pivot_status)}"></div>
+        </div>
+      `,
+        )
+        .join('')
 
-        return {
-          id: schedule.id,
-          startTime: schedule.startTime || '00:00:00',
-          endTime: schedule.endTime || '00:00:00',
-          departmentId: department?.id || '',
-          departmentName: department?.name || 'Không xác định',
-          departmentColor: department?.id ? `#${Math.random().toString(16).slice(2, 8)}` : '#ccc',
-          staff: {
-            id: staff.id,
-            name: staff.user?.name || 'Không xác định',
-            avatar: staff.user?.avatar || '/defaultAvatar.png',
-          },
-          status: schedule.status || 'active',
-          shiftLabel: shiftInfo.label,
-          shiftBadgeColor: shiftInfo.color,
-        }
+      const moreStaffHtml =
+        shiftData.staffs.length > 3
+          ? `<div class="fc-event-avatar-more">+${shiftData.staffs.length - 3}</div>`
+          : ''
+
+      return {
+        html: `
+        <div class="fc-event-main-frame">
+          <div class="fc-event-title text-white">${arg.event.title}</div>
+          <div class="fc-event-avatars">${staffAvatarsHtml}${moreStaffHtml}</div>
+        </div>
+      `,
+      }
+    },
+    eventDidMount: (info) => {
+      const shiftData = info.event.extendedProps.shiftData as DoctorShiftWithPivot
+      const staffListHtml = shiftData.staffs
+        .map(
+          (staff) => `
+        <div class="tippy-staff-row">
+          <div class="tippy-status-dot" style="background-color: ${getStaffStatusColor(staff.pivot_status, true)};"></div>
+          <span>${staff.user?.name} (${getStaffStatusText(staff.pivot_status)})</span>
+        </div>
+      `,
+        )
+        .join('')
+
+      tippy(info.el, {
+        content: `<div class="tippy-content-wrapper"><h4>Nhân Viên Trực</h4>${staffListHtml}</div>`,
+        allowHTML: true,
+        theme: 'light-border',
       })
-    })
-    .filter((item) => {
-      const departmentMatch =
-        filterDepartment.value === 'Tất cả' || item.departmentName === filterDepartment.value
-      const searchMatch =
-        !query ||
-        item.staff.name.toLowerCase().includes(query) ||
-        item.departmentName.toLowerCase().includes(query)
-      return departmentMatch && searchMatch
-    })
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+    },
+    eventWillUnmount: (info) => {
+      const tippyInstance = (info.el as any)._tippy as TippyInstance
+      if (tippyInstance) tippyInstance.destroy()
+    },
+    dayMaxEvents: true,
+    height: 'auto',
+    eventDisplay: 'block',
+    eventTimeFormat: {
+      hour: '2-digit',
+      minute: '2-digit',
+      meridiem: false,
+      hour12: false,
+    },
+  }),
+)
 
-  return result
-})
-
-const paginatedSchedule = computed(() => {
-  const start = currentPage.value - 1
-  const end = start + itemsPerPage.value
-  return filteredSchedule.value.slice(start, end)
-})
-
-const getChangeStatusName = (status: string) => {
-  const statusMap: Record<string, string> = {
-    PENDING: 'Chờ xác nhận',
-    APPROVE: 'Đã xác nhận',
-    IN_PROGRESS: 'Đang trong ca trực',
-    COMPLETED: 'Đã hoàn thành',
-  }
-  return statusMap[status] || 'Đã hủy'
-}
-
-// --- Methods ---
+// Methods
 const fetchAllData = async () => {
-  try {
-    await Promise.all([
-      departmentStore.fetchDepartments(0, 1000),
-      staffStore.fetchAllStaffs(0, 1000),
-      scheduleStore.fetchAllSchedule(0, 1000),
-    ])
-    currentPage.value = 1
-  } catch (error) {
-    toast.error('Không thể tải dữ liệu.')
-  }
+  await Promise.all([
+    departmentStore.fetchDepartments(0, 1000),
+    staffStore.fetchAllStaffs(0, 1000),
+    scheduleStore.fetchAllSchedule(0, 1000),
+  ])
 }
 
 const resetForm = () => {
   Object.assign(formState, {
     id: undefined,
     departmentId: '',
-    staffId: '',
+    staffIds: [],
     shiftValue: 'morning',
     dayWork: new Date().toISOString().slice(0, 10),
   })
+  formRef.value?.reset()
+  return true
 }
 
-const onDepartmentChangeInForm = () => {
-  formState.staffId = ''
+const openAssignModal = (shift: DoctorShiftWithPivot | null = null) => {
+  resetForm()
+  if (shift) {
+    const shiftInfo = getShiftInfo(shift)
+    formState.id = shift.id
+    formState.dayWork = shift.dayWork
+    formState.staffIds = shift.staffs.map((s) => s.id)
+    formState.shiftValue = shiftInfo.value as any
+    formState.departmentId = shift.departments?.id || ''
+  }
+  isAssignModalVisible.value = true
+}
+
+const removeStaffFromSelection = (staffIdToRemove: string) => {
+  formState.staffIds = formState.staffIds.filter((id) => id !== staffIdToRemove)
 }
 
 const handleSubmit = async () => {
-  const selectedShift = shiftTimes.find((s) => s.value === formState.shiftValue)
-  if (!formState.departmentId || !formState.staffId || !selectedShift || !formState.dayWork) {
-    toast.error('Vui lòng điền đầy đủ thông tin.')
-    return
-  }
-
-  const payload: DoctorShiftCreateRequest = {
+  const isValid = await formRef.value.validate()
+  if (!isValid) return
+  isSubmitting.value = true
+  const selectedShift = shiftTimes.find((s) => s.value === formState.shiftValue)!
+  const payload: DoctorShiftCreateRequest | DoctorShiftUpdateRequest = {
     startTime: selectedShift.start,
     endTime: selectedShift.end,
     dayWork: formState.dayWork,
-    staffId: formState.staffId,
+    staffIds: formState.staffIds,
+    status: 'PENDING',
+    departmentId: formState.departmentId || undefined,
   }
 
   try {
     if (formState.id) {
       await scheduleStore.updateById(formState.id, payload)
-      toast.success('Cập nhật lịch trực thành công!')
+      toast.success('Cập nhật yêu cầu thành công!')
     } else {
-      await scheduleStore.createSchedule(payload)
-      toast.success('Phân công lịch trực thành công!')
+      await scheduleStore.createSchedule(payload as DoctorShiftCreateRequest)
+      toast.success('Đã gửi yêu cầu đến các nhân viên!')
     }
+    isAssignModalVisible.value = false
     await fetchAllData()
-    resetForm()
   } catch (error: any) {
-    toast.error(error.message || 'Lỗi không xác định')
+    toast.error(error.message || 'Thao tác thất bại.')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-const handleEdit = (scheduleItem: any) => {
-  formState.id = scheduleItem.id
-  formState.departmentId = scheduleItem.departmentId
-  formState.staffId = scheduleItem.staff.id
-  formState.dayWork = filterDate.value
-  const shift = shiftTimes.find((s) => s.start === scheduleItem.startTime)
-  formState.shiftValue = (shift ? shift.value : 'morning') as 'morning' | 'afternoon' | 'night'
+const handleEventClick = (clickInfo: EventClickArg) => {
+  const shiftData = clickInfo.event.extendedProps.shiftData as DoctorShiftWithPivot
+  if (canModifyShift(shiftData)) {
+    openAssignModal(shiftData)
+  } else {
+    toast.info('Chỉ có thể chỉnh sửa các ca trực ở trạng thái "Chờ xác nhận".')
+  }
 }
 
-const showDeleteConfirm = (id: string) => {
-  scheduleIdToDelete.value = id
-  isDeleteModalVisible.value = true
-}
-
-const cancelDelete = () => {
-  isDeleteModalVisible.value = false
-  scheduleIdToDelete.value = null
+const handleDateSelect = (selectInfo: DateSelectArg) => {
+  resetForm()
+  formState.dayWork = selectInfo.startStr
+  isAssignModalVisible.value = true
 }
 
 const confirmDelete = async () => {
@@ -366,112 +419,299 @@ const confirmDelete = async () => {
   } catch (error: any) {
     toast.error(`Lỗi khi xóa ca trực: ${error.message}`)
   } finally {
-    cancelDelete()
+    isDeleteModalVisible.value = false
   }
 }
 
-// --- Lifecycle Hooks ---
+const canModifyShift = (shift: DoctorShift) => shift.status === 'PENDING'
+
+const getShiftInfo = (shift: DoctorShift) => {
+  const foundShift = shiftTimes.find(
+    (st) => st.start === shift.startTime && st.end === shift.endTime,
+  )
+
+  if (!foundShift) {
+    console.warn(
+      `CẢNH BÁO: Không tìm thấy thông tin ca trực cho: ${shift.startTime} - ${shift.endTime}. Sử dụng ca mặc định. Vui lòng kiểm tra và cập nhật hằng số 'shiftTimes'.`,
+    )
+    return shiftTimes[0]
+  }
+
+  return foundShift
+}
+
+const getStaffStatusText = (status: string) =>
+  ({ PENDING: 'Chờ', APPROVED: 'Xác nhận', COMPLETED: 'Hoàn thành', CANCELED: 'Từ chối' })[status] || 'Không rõ'
+
+const getStaffStatusColor = (status: string, isHex = false) => {
+  const map: Record<string, string> = {
+    PENDING: '#FFC107',
+    APPROVED: '#28A745',
+    COMPLETED: 'blue',
+    CANCELED: '#DC3545',
+  }
+  const vaMap: Record<string, string> = {
+    PENDING: 'warning',
+    APPROVED: 'success',
+    COMPLETED: 'info',
+    CANCELED: 'danger',
+  }
+  return isHex ? map[status] || '#6c757d' : vaMap[status] || 'secondary'
+}
+
 onMounted(fetchAllData)
 </script>
 
-<style lang="scss" scoped>
-.doctor-shift-page {
-  display: flex;
-  flex-direction: column;
+<style lang="scss">
+// --- Biến Màu Sắc & Giao Diện ---
+$primary-color: #0288d1;
+$primary-color-dark: #01579b;
+$background-color: #f8f9fa;
+$card-background: #ffffff;
+$text-color: #212529;
+$text-muted-color: #6c757d;
+
+// --- Thiết Lập Font Chữ ---
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+// --- Tổng Thể Trang ---
+.schedule-calendar-page {
+  padding: 2rem;
+  background-color: $background-color;
+  min-height: 100vh;
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
-.filters-container {
+
+// --- Header Của Trang ---
+.calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.filter-group {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-.date-input {
-  min-width: 180px;
-}
-.department-select {
-  min-width: 200px;
-}
-.search-input {
-  max-width: 300px;
-}
-.schedule-container {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 1rem;
-  align-items: start;
-}
-@media (max-width: 1200px) {
-  .schedule-container {
-    grid-template-columns: 1fr;
+  margin-bottom: 2rem;
+  .header-text {
+    .va-h4 {
+      font-weight: 700;
+      color: $primary-color-dark;
+      margin-bottom: 0.25rem;
+    }
+    .text-muted {
+      color: $text-muted-color;
+      font-size: 1rem;
+    }
   }
 }
-.shift-assignment-card {
-  position: sticky;
-  top: 1rem;
+
+// --- Thẻ Lịch ---
+.calendar-card {
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: $card-background;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  .va-card-content {
+    padding: 1.5rem;
+  }
 }
-.schedule-grid {
+th {
+  z-index: 0 !important;
+}
+// --- Tùy Chỉnh FullCalendar ---
+.fc {
+  --fc-button-bg-color: #{$primary-color};
+  --fc-button-hover-bg-color: #{$primary-color-dark};
+  --fc-button-active-bg-color: #{$primary-color-dark};
+  --fc-button-border-color: transparent;
+  --fc-button-text-color: #fff;
+  --fc-today-bg-color: rgba(79, 195, 247, 0.15);
+  --fc-border-color: #dee2e6;
+
+  .fc-toolbar-title {
+    font-weight: 600;
+    color: $primary-color-dark;
+  }
+  .fc-daygrid-day-number {
+    color: $text-muted-color;
+    padding: 8px;
+  }
+}
+
+// --- Tùy Chỉnh Giao Diện Sự Kiện ---
+.fc-event-main-frame {
+  padding: 6px 8px;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 6px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+  color: white;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--va-background-border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.schedule-row {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr 3fr 2fr 1fr;
-  align-items: center;
-  border-bottom: 1px solid var(--va-background-border);
-}
-.schedule-row:last-child {
-  border-bottom: none;
-}
-.schedule-row.header {
-  background-color: var(--va-background-primary);
-  font-weight: 600;
-}
-.schedule-row.header .schedule-cell {
-  padding: 0.75rem 1rem;
-}
-.schedule-row.empty .schedule-cell {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem;
-  color: var(--va-text-secondary);
-}
-.schedule-cell {
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-}
-.schedule-cell.actions {
-  gap: 0.5rem;
-}
-.assigned-doctor {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.assigned-doctor .doctor-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.assigned-doctor .doctor-info .doctor-name {
-  font-weight: 500;
-}
-.assigned-doctor .doctor-info .doctor-department {
-  font-size: 0.8rem;
-  color: var(--va-text-secondary);
-}
-.pagination-container {
-  display: flex;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.fc-event-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+.fc-event-avatars {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.fc-event-avatar-wrapper {
+  position: relative;
+  &:not(:first-child) {
+    margin-left: -12px;
+  }
+}
+
+.fc-event-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid $card-background;
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background-color: #e0e0e0;
+}
+
+.fc-event-avatar-status {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid $card-background;
+  &.success {
+    background-color: #28a745;
+  }
+  &.warning {
+    background-color: #ffc107;
+  }
+  &.danger {
+    background-color: #dc3545;
+  }
+}
+
+.fc-event-avatar-more {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid $card-background;
+  margin-left: -12px;
+  background-color: $text-muted-color;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+// --- Tùy Chỉnh Tooltip (Tippy.js) ---
+.tippy-box[data-theme~='light-border'] {
+  border: 1px solid #dee2e6;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  background: $card-background;
+  color: $text-color;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.tippy-content-wrapper {
+  padding: 12px;
+  h4 {
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    color: $primary-color;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 8px;
+  }
+  .tippy-staff-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    &:not(:last-child) {
+      margin-bottom: 4px;
+    }
+    .tippy-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// --- Tùy Chỉnh Modal ---
+.custom-modal {
+  // Áp dụng hiệu ứng kính mờ cho lớp phủ (background)
+  .va-modal__overlay {
+    background: rgba(22, 22, 22, 0.6);
+    backdrop-filter: blur(8px);
+  }
+
+  // Hộp thoại modal bây giờ chỉ cần có nền trắng và bóng đổ
+  .va-modal__container {
+    background: $card-background;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .va-modal__header {
+    background-color: rgba(2, 136, 209, 0.05);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .modal-form {
+    padding: 1.5rem 2rem 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .va-input {
+    --va-input-border-radius: 8px;
+    --va-input-color: #{$text-color};
+  }
+
+  .va-chip {
+    --va-chip-border-radius: 6px;
+  }
+}
+
+// --- Định Nghĩa Màu Sắc Cho Các Class Ca Trực ---
+.fc-event.morning-shift .fc-event-main-frame {
+  background: linear-gradient(135deg, #4dabf7 0%, #228be6 100%);
+}
+
+.fc-event.afternoon-shift .fc-event-main-frame {
+  background: linear-gradient(135deg, #ffdd57 0%, #ffc107 100%);
+}
+
+.fc-event.night-shift .fc-event-main-frame {
+  background: linear-gradient(135deg, #be95c4 0%, #8e44ad 100%);
+}
+
+.fc-event.overnight-shift .fc-event-main-frame {
+  background: linear-gradient(135deg, #5c6bc0 0%, #311b92 100%);
 }
 </style>

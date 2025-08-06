@@ -33,6 +33,7 @@ export type Account = {
     gender: string
     dob: string
     age: number
+    staffId: string
   }
 }
 export type RequestUpdateInfo = {

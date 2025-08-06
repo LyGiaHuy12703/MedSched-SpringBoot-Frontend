@@ -1,85 +1,110 @@
 <template>
   <va-inner-loading :loading="serviceStore.loading">
-    <va-card>
-      <va-card-content>
-        <div class="justify-content-around my-3">
-          <div class="my-3"><h1>Quản lý dịch vụ</h1></div>
-          <div>
-            <va-button @click="onShowModalAdd">Thêm dịch vụ</va-button>
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".xlsx"
-              class="hidden"
-              @change="onFileSelected"
-            />
+    <va-card class="shadow-sm">
+      <va-card-content class="p-6">
+        <h1 class="text-3xl font-semibold text-gray-800 text-center mb-6">Quản lý dịch vụ</h1>
 
-            <!-- Nút chọn file -->
-            <va-button preset="secondary" class="ml-3" @click="triggerFileInput">
-              Import Excel
-            </va-button>
-
-            <!-- Hiển thị tên file đã chọn -->
-            <span v-if="selectedFile" class="ml-2">{{ selectedFile.name }}</span>
-
-            <!-- Nút Submit -->
-            <va-button
-              preset="primary"
-              class="ml-3"
-              :disabled="!selectedFile"
-              @click="submitImport"
-            >
-              Submit
-            </va-button>
-          </div>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+        <div class="d-flex gap-4 mb-6 align-center">
           <va-input
             v-model="searchQuery"
             placeholder="Nhập mã dịch vụ, tên, mô tả..."
             clearable
-            class="filter-input"
+            class="input-field flex-grow"
             aria-label="Tìm kiếm dịch vụ theo tên"
           >
             <template #prependInner>
-              <va-icon name="search" color="#718096" />
+              <va-icon name="search" color="text-gray-600" size="medium" />
             </template>
           </va-input>
-
-          <div class="filter-actions">
-            <va-button preset="secondary" @click="resetFilters" class="action-button">
-              Xóa bộ lọc
-            </va-button>
-            <va-button preset="primary" @click="handleSearch" class="action-button">
-              Tìm kiếm
-            </va-button>
-          </div>
+          <va-button preset="secondary" @click="resetFilters" class="action-button px-6 py-2">
+            Xóa bộ lọc
+          </va-button>
+          <va-button preset="primary" @click="handleSearch" class="action-button px-6 py-2">
+            Tìm kiếm
+          </va-button>
         </div>
-        <VaDataTable :items="serviceList" :columns="columns" hoverable>
+
+        <div class="d-flex gap-4 mb-6 align-center">
+          <va-button preset="primary" @click="onShowModalAdd" class="action-button px-6 py-2">
+            Thêm dịch vụ
+          </va-button>
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".xlsx"
+            class="hidden"
+            @change="onFileSelected"
+          />
+          <va-button preset="secondary" class="action-button px-6 py-2" @click="triggerFileInput">
+            Import Excel
+          </va-button>
+          <span v-if="selectedFile" class="ml-2 text-gray-700">{{ selectedFile.name }}</span>
+          <va-button
+            preset="primary"
+            class="action-button px-6 py-2"
+            :disabled="!selectedFile"
+            @click="submitImport"
+          >
+            Submit
+          </va-button>
+          <va-button
+            preset="secondary"
+            class="action-button px-6 py-2"
+            @click="exportServicesToExcel"
+          >
+            Export Excel
+          </va-button>
+          <va-button preset="secondary" class="action-button px-6 py-2">
+            <a
+              href="/excel/data-services-frame.xlsx"
+              download="template-import-services.xlsx"
+              style="text-decoration: none; color: inherit"
+            >
+              Download Excel Template
+            </a>
+          </va-button>
+        </div>
+
+        <VaDataTable :items="serviceList" :columns="columns" hoverable class="custom-table mt-2">
           <template #cell(id)="slotProps">
             ser0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
           </template>
           <template #cell(actions)="slotProps">
-            <VaButton
-              preset="plain"
-              icon="visibility"
-              @click="onShowDetailModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="edit"
-              class="ml-3"
-              @click="onShowEditModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="delete"
-              class="ml-3"
-              @click="onShowDeleteModal(slotProps.rowData)"
-            />
+            <div class="d-flex justify-center gap-2">
+              <VaButton
+                preset="primary"
+                size="small"
+                icon="visibility"
+                @click="onShowDetailModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xem chi tiết"
+                >Xem chi tiết</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                color="warning"
+                icon="edit"
+                @click="onShowEditModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Chỉnh sửa"
+                >Chỉnh sửa</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                color="danger"
+                icon="delete"
+                @click="onShowDeleteModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xóa"
+                >Xóa</VaButton
+              >
+            </div>
           </template>
         </VaDataTable>
-        <div class="my-3 d-flex pagination-container">
+
+        <div class="d-flex justify-end my-2 pagination-container">
           <VaPagination
             v-model="currentPage"
             :total="total"
@@ -87,9 +112,18 @@
             :rows-per-page="pageSize"
             :rows-per-page-options="[5, 10, 20]"
             :visible-pages="5"
-            class="mt-6"
+            class="custom-pagination"
             @update:modelValue="onPageChange"
           />
+        </div>
+
+        <div class="d-flex gap-4 mt-6">
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Số mục đã lọc: <va-chip color="danger" outline>{{ total <= 5 ? total : 5 }}</va-chip>
+          </va-alert>
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Tổng số mục: <va-chip color="danger" outline>{{ total }}</va-chip>
+          </va-alert>
         </div>
 
         <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
@@ -117,30 +151,6 @@
             @close-confirm="onCloseModalDelete"
           />
         </va-modal>
-        <div class="d-flex">
-          <VaAlert class="!mt-6" color="info" outline>
-            Number of filtered items:
-            <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
-          </VaAlert>
-          <VaAlert class="!mt-6" color="info" outline>
-            Total items:
-            <VaChip>{{ total }}</VaChip>
-          </VaAlert>
-        </div>
-        <div class="d-flex mt-3 excel-service">
-          <va-button preset="secondary" class="ml-3">
-            <a
-              href="/excel/data-services-frame.xlsx"
-              download="template-import-services.xlsx"
-              style="text-decoration: none; color: inherit"
-            >
-              Download Excel Template
-            </a>
-          </va-button>
-          <va-button preset="secondary" class="ml-3" @click="exportServicesToExcel">
-            Export Excel
-          </va-button>
-        </div>
       </va-card-content>
     </va-card>
   </va-inner-loading>
@@ -353,14 +363,111 @@ const submitImport = async () => {
 </script>
 
 <style scoped lang="scss">
+.input-field {
+  :deep(.va-input-wrapper) {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+    &:hover {
+      border-color: var(--va-primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  }
+  :deep(.va-input-wrapper__field) {
+    font-size: 1rem;
+    color: #1e293b;
+  }
+}
+
+.custom-table {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  :deep(.va-data-table__table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  :deep(.va-data-table__table-thead) {
+    background-color: #e5e7eb !important;
+    th {
+      font-weight: 600;
+      color: #1e293b;
+      padding: 1.25rem;
+      border-bottom: 2px solid #d1d5db;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+  }
+  :deep(.va-data-table__table-row) {
+    transition: background-color 0.3s ease;
+    &:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    &:hover {
+      background-color: #d1d5db !important;
+    }
+    td {
+      padding: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+      font-size: 1rem;
+    }
+  }
+}
+
+.action-button {
+  :deep(.va-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
 .pagination-container {
-  justify-content: end;
-  margin-top: 40px;
+  justify-content: flex-end;
 }
-:deep(.va-data-table__table-thead) {
-  background-color: #ecf0f1 !important; /* đổi màu header */
+
+.custom-pagination {
+  :deep(.va-pagination__item) {
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+    &:hover {
+      background-color: #e5e7eb;
+      transform: scale(1.1);
+    }
+    &.va-pagination__item--active {
+      background-color: var(--va-primary);
+      color: #ffffff;
+    }
+  }
 }
-.excel-service {
-  justify-content: space-between;
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.text-gray-600 {
+  color: #4b5563;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.text-gray-800 {
+  color: #1e293b;
+}
+:deep(.va-data-table__table-th) {
+  --va-data-table-align: center !important;
 }
 </style>

@@ -1,481 +1,447 @@
 <script setup lang="ts">
-import type { Account, ChangePassword } from '@/interfaces/auth.interfaces'
+import type { Account, ChangePassword, RequestUpdateInfo } from '@/interfaces/auth.interfaces'
 import { useAuthStore } from '@/stores/auth.store'
-import { onMounted, ref } from 'vue'
+import { useCloudinaryStore } from '@/stores/cloudinary.store'
+import { onMounted, ref, computed } from 'vue'
 import { toast } from 'vue3-toastify'
 import { useModal } from 'vuestic-ui'
 
+// --- Stores and Hooks ---
 const authStore = useAuthStore()
+const cloudinaryStore = useCloudinaryStore()
 const { confirm } = useModal()
 
-const showConfirmChangeInfo = () => {
-  confirm('Are you sure you want to change profile?').then((ok) => {
-    if (ok) {
-      changeInfo()
-    }
-  })
-}
+// --- Component State ---
+const isSubmitting = ref(false)
+const activeTab = ref('profile')
 
-const userApi = ref<Account>({
-  user: {
-    id: '',
-    name: '',
-    email: '',
-    role: '',
-    avatarUrl: '',
-    phone: '',
-    address: '',
-    dob: '',
-    gender: '',
-    age: 0,
-  },
-})
+// User data state
+const userApi = ref<Account | null>(null)
+const originalUserApi = ref<Account | null>(null)
+const avatarFile = ref<File | null>(null)
+const previewAvatarUrl = ref<string>('')
 
-onMounted(async () => {
-  const data = await authStore.getInfo()
-  if (data) {
-    userApi.value = data // Cập nhật userApi.value
-  } else {
-    console.error('Failed to fetch user info')
-  }
-})
-
-const changeInfo = async () => {
-  const data = await authStore.updateInfo({ user: userApi?.value?.user })
-  if (data) {
-    userApi.value = data // Cập nhật userApi.value
-  } else {
-    console.error('Failed to update user info')
-  }
-}
-const securityForm = ref({
-  currentPassword: '',
+// Security form state
+const securityForm = ref<ChangePassword & { confirmPassword: string }>({
+  password: '',
   newPassword: '',
   confirmPassword: '',
 })
 
-const notificationSettings = ref({
-  emailNotifications: true,
-  taskAssignments: true,
-  teamUpdates: true,
-  systemAlerts: false,
-  weeklyDigest: true,
+// Static options
+const genderOptions = ref([
+  { text: 'Nam', value: 'MALE' },
+  { text: 'Nữ', value: 'FEMALE' },
+  { text: 'Khác', value: 'OTHERS' },
+])
+
+// --- Computed Properties ---
+const userRole = computed(() => {
+  const roleName = userApi.value?.user?.role?.[0]?.name || userApi.value?.user?.role
+  return roleName ? roleName.replace(/_/g, ' ').toUpperCase() : 'NHÂN VIÊN'
 })
 
-const genders = [
-  { value: 'MALE', text: 'MALE' },
-  { value: 'FEMALE', text: 'FEMALE' },
-  { value: 'OTHERS', text: 'OTHERS' },
-]
+const isFormChanged = computed(() => {
+  if (!originalUserApi.value || !userApi.value) {
+    return false
+  }
+  if (avatarFile.value) {
+    return true
+  }
+  const originalDataString = JSON.stringify(originalUserApi.value.user)
+  const currentDataString = JSON.stringify(userApi.value.user)
+  return originalDataString !== currentDataString
+})
 
-const activeTab = ref('profile')
+const avatarSrc = computed(
+  () => previewAvatarUrl.value || userApi.value?.user?.avatarUrl || '/defaultAvatar.png',
+)
 
-const updatePassword = () => {
-  confirm('Are you sure you want to change password?').then((ok) => {
-    if (ok) {
-      changePassword()
+// --- Lifecycle Hooks ---
+onMounted(async () => {
+  isSubmitting.value = true
+  try {
+    const data = await authStore.getInfo()
+    if (data && data.user) {
+      userApi.value = JSON.parse(JSON.stringify(data))
+      originalUserApi.value = JSON.parse(JSON.stringify(data))
+      if (userApi.value.user.dob) {
+        userApi.value.user.dob = new Date(userApi.value.user.dob).toISOString().split('T')[0]
+      }
+      previewAvatarUrl.value = userApi.value.user.avatarUrl || ''
+    } else {
+      toast.error('Không thể tải thông tin người dùng.')
+      userApi.value = {
+        user: {
+          id: '',
+          name: '',
+          email: '',
+          role: '',
+          avatarUrl: '',
+          phone: '',
+          address: '',
+          dob: '',
+          gender: '',
+          age: 0,
+        },
+      }
     }
-  })
+  } catch (error) {
+    console.error('Error fetching user info:', error)
+    toast.error('Có lỗi xảy ra khi tải thông tin người dùng.')
+  } finally {
+    isSubmitting.value = false
+  }
+})
+
+// --- Methods ---
+const handleImageUpload = (files: File[] | null) => {
+  const file = files?.[0]
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file hình ảnh!')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Kích thước hình ảnh phải nhỏ hơn 2MB!')
+      return
+    }
+    avatarFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      previewAvatarUrl.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  } else {
+    avatarFile.value = null
+    previewAvatarUrl.value = userApi.value?.user.avatarUrl || ''
+  }
 }
 
-const changePassword = async () => {
-  if (securityForm.value.newPassword !== securityForm.value.confirmPassword) {
-    toast.error('New password and confirm password do not match')
+const showConfirmChangeInfo = async () => {
+  if (!userApi.value) return
+
+  if (!userApi.value.user.name || !userApi.value.user.address || !userApi.value.user.dob) {
+    toast.error('Họ và tên, địa chỉ và ngày sinh là bắt buộc!')
     return
   }
-  if (securityForm.value.newPassword.length < 5) {
-    toast.error('New password must be at least 5 characters long')
+  if (userApi.value.user.age < 0) {
+    toast.error('Tuổi phải là số dương!')
     return
   }
-  const requestApi: ChangePassword = {
-    password: securityForm.value.currentPassword,
-    newPassword: securityForm.value.newPassword,
-  }
-  const data = await authStore.updatePassword(requestApi)
-  if (data) {
-    toast.success('Password updated successfully')
-    securityForm.value.currentPassword = ''
-    securityForm.value.newPassword = ''
-    securityForm.value.confirmPassword = ''
-  } else {
-    toast.error('Failed to update password')
-    securityForm.value.currentPassword = ''
-    securityForm.value.newPassword = ''
-    securityForm.value.confirmPassword = ''
+
+  const ok = await confirm({
+    title: 'Xác nhận cập nhật thông tin',
+    message: 'Bạn có chắc chắn muốn cập nhật thông tin cá nhân?',
+    okText: 'Đồng ý',
+    cancelText: 'Hủy bỏ',
+  })
+  if (!ok) return
+
+  isSubmitting.value = true
+  try {
+    let finalAvatarUrl = userApi.value.user.avatarUrl
+    if (avatarFile.value) {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', avatarFile.value)
+      const response = await cloudinaryStore.upload(uploadFormData)
+      if (typeof response === 'string') {
+        finalAvatarUrl = response
+      } else {
+        throw new Error('Invalid avatar upload response')
+      }
+    }
+
+    const requestApi: RequestUpdateInfo = {
+      name: userApi.value.user.name,
+      email: userApi.value.user.email,
+      phone: userApi.value.user.phone,
+      address: userApi.value.user.address,
+      gender: userApi.value.user.gender,
+      dob: userApi.value.user.dob,
+      age: userApi.value.user.age,
+      avatarUrl: finalAvatarUrl,
+    }
+
+    const updatedData = await authStore.updateInfo(requestApi)
+    if (updatedData && updatedData.user) {
+      userApi.value = updatedData
+      originalUserApi.value = JSON.parse(JSON.stringify(updatedData))
+      previewAvatarUrl.value = updatedData.user.avatarUrl || ''
+      avatarFile.value = null
+      toast.success('Cập nhật thông tin thành công!')
+    } else {
+      toast.error('Cập nhật thông tin thất bại!')
+    }
+  } catch (error: any) {
+    console.error('Error updating profile:', error)
+    toast.error('Có lỗi xảy ra khi cập nhật thông tin!')
+    previewAvatarUrl.value = userApi.value?.user.avatarUrl || ''
+  } finally {
+    isSubmitting.value = false
   }
 }
-const updateNotifications = () => {
-  // Handle notification settings update
-  console.log('Notifications updated:', notificationSettings.value)
+
+const updatePassword = async () => {
+  const { password, newPassword, confirmPassword } = securityForm.value
+
+  if (!password || !newPassword || !confirmPassword) {
+    toast.error('Vui lòng điền đầy đủ các trường mật khẩu!')
+    return
+  }
+  if (newPassword.length < 5) {
+    toast.error('Mật khẩu mới phải có ít nhất 5 ký tự!')
+    return
+  }
+  if (newPassword !== confirmPassword) {
+    toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp!')
+    return
+  }
+
+  const ok = await confirm({
+    title: 'Xác nhận đổi mật khẩu',
+    message: 'Bạn có chắc chắn muốn đổi mật khẩu?',
+    okText: 'Đồng ý',
+    cancelText: 'Hủy bỏ',
+  })
+  if (!ok) return
+
+  isSubmitting.value = true
+  try {
+    const requestApi: ChangePassword = {
+      password,
+      newPassword,
+    }
+    const success = await authStore.updatePassword(requestApi)
+    if (success) {
+      toast.success('Cập nhật mật khẩu thành công!')
+      securityForm.value = { password: '', newPassword: '', confirmPassword: '' }
+    } else {
+      toast.error('Cập nhật mật khẩu thất bại!')
+    }
+  } catch (error: any) {
+    console.error('Error updating password:', error)
+    toast.error('Có lỗi xảy ra khi cập nhật mật khẩu!')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
 <template>
   <div class="profile-page">
-    <div class="profile-header">
-      <div class="header-content">
-        <div class="avatar-section">
-          <va-avatar :src="userApi.user.avatarUrl || '/defaultAvatar.png'" size="large" />
-          <va-button preset="secondary" size="small"> Change Photo </va-button>
-        </div>
-        <div class="profile-info">
-          <h1 class="profile-name">{{ userApi?.user.name || 'ADMIN' }}</h1>
-          <p class="profile-title">MEDSCHED • Administrator</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="profile-tabs">
-      <va-tabs v-model="activeTab">
-        <va-tab name="profile">
-          <va-icon name="person" />
-          Profile
-        </va-tab>
-        <va-tab name="security">
-          <va-icon name="security" />
-          Security
-        </va-tab>
-        <va-tab name="notifications">
-          <va-icon name="notifications" />
-          Notifications
-        </va-tab>
+    <va-inner-loading :loading="isSubmitting" :size="60">
+      <h1 class="page-title">Thông tin tài khoản</h1>
+      <va-tabs v-model="activeTab" grow class="mb-4">
+        <va-tab name="profile"> <va-icon name="person" class="mr-2" /> Hồ sơ </va-tab>
+        <va-tab name="security"> <va-icon name="lock" class="mr-2" /> Bảo mật </va-tab>
       </va-tabs>
-    </div>
 
-    <div class="tab-content">
       <!-- Profile Tab -->
-      <div v-if="activeTab === 'profile'" class="profile-section">
-        <va-card>
-          <va-card-title>Personal Information</va-card-title>
-          <va-card-content>
-            <form @submit.prevent="showConfirmChangeInfo">
-              <div class="form-row">
-                <div class="form-group">
-                  <va-input
-                    v-model="userApi.user.email"
-                    type="email"
-                    label="Email"
-                    :disabled="true"
-                  />
-                </div>
+      <div v-if="activeTab === 'profile' && userApi">
+        <form @submit.prevent="showConfirmChangeInfo">
+          <va-card class="form-card">
+            <va-card-title>Chi tiết hồ sơ</va-card-title>
+            <va-card-content class="form-layout">
+              <!-- Left Column: Personal Info -->
+              <div class="form-grid">
+                <va-input v-model="userApi.user.id" label="ID Người dùng" readonly />
+                <va-input v-model="userApi.user.email" label="Email" readonly />
+                <va-input
+                  v-model="userApi.user.name"
+                  label="Họ và tên"
+                  placeholder="Nhập họ và tên"
+                  :rules="[(v) => !!v || 'Họ và tên là bắt buộc']"
+                />
+                <va-input
+                  v-model="userApi.user.phone"
+                  label="Số điện thoại"
+                  placeholder="Nhập số điện thoại"
+                  :rules="[
+                    (v: string) => !!v || 'Số điện thoại là bắt buộc',
+                    (v: string) => /^0\d{9}$/.test(v) || 'Số điện thoại không hợp lệ',
+                  ]"
+                />
+                <va-select
+                  v-model="userApi.user.gender"
+                  label="Giới tính"
+                  :options="genderOptions"
+                  text-by="text"
+                  value-by="value"
+                />
+                <va-input
+                  v-model="userApi.user.dob"
+                  type="date"
+                  label="Ngày sinh"
+                  :rules="[(v) => !!v || 'Ngày sinh là bắt buộc']"
+                />
+                <va-input
+                  v-model="userApi.user.address"
+                  label="Địa chỉ"
+                  class="full-width"
+                  placeholder="Nhập địa chỉ"
+                  :rules="[(v) => !!v || 'Địa chỉ là bắt buộc']"
+                />
+                <va-input :model-value="userRole" label="Vai trò" class="full-width" readonly />
+                <va-input
+                  v-model.number="userApi.user.age"
+                  type="number"
+                  label="Tuổi"
+                  class="full-width"
+                  :rules="[(v) => v >= 0 || 'Tuổi phải là số dương']"
+                />
               </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <va-input v-model="userApi.user.name" label="Name" required />
-                </div>
-                <div class="form-group">
-                  <va-input v-model="userApi.user.phone" label="Phone" />
-                </div>
+              <!-- Right Column: Avatar -->
+              <div class="avatar-section">
+                <p class="va-title">Ảnh đại diện</p>
+                <va-avatar :src="avatarSrc" size="150px" font-size="3rem" />
+                <va-file-upload
+                  @update:model-value="handleImageUpload"
+                  accept="image/*"
+                  dropzone
+                  class="mt-4"
+                  :disabled="isSubmitting"
+                >
+                  {{ previewAvatarUrl ? 'Thay đổi ảnh' : 'Tải ảnh lên' }}
+                </va-file-upload>
               </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <va-input v-model="userApi.user.address" label="Address" required />
-                </div>
-                <div class="form-group">
-                  <va-input v-model="userApi.user.role" label="Role" :disabled="true" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <va-input v-model="userApi.user.age" type="textarea" label="Age" rows="4" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <va-select
-                    v-model="userApi.user.gender"
-                    label="Gender"
-                    :options="genders"
-                    text-by="text"
-                    value-by="value"
-                  />
-                </div>
-                <div class="form-group">
-                  <va-input
-                    v-model="userApi.user.dob"
-                    label="Date of birth"
-                    type="date"
-                    text-by="text"
-                    value-by="value"
-                  />
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <va-button preset="primary" type="submit"> Save Changes </va-button>
-              </div>
-            </form>
-          </va-card-content>
-        </va-card>
+            </va-card-content>
+          </va-card>
+          <div class="form-actions">
+            <va-button
+              :disabled="!isFormChanged || isSubmitting"
+              preset="primary"
+              type="submit"
+              icon="save"
+              :loading="isSubmitting"
+            >
+              Lưu thay đổi
+            </va-button>
+          </div>
+        </form>
       </div>
 
       <!-- Security Tab -->
-      <div v-if="activeTab === 'security'" class="security-section">
-        <va-card>
-          <va-card-title>Change Password</va-card-title>
+      <div v-if="activeTab === 'security'">
+        <va-card class="form-card">
+          <va-card-title>Đổi mật khẩu</va-card-title>
           <va-card-content>
-            <form @submit.prevent="updatePassword">
-              <div class="form-group">
-                <va-input
-                  v-model="securityForm.currentPassword"
-                  type="password"
-                  label="Current Password"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <va-input
-                  v-model="securityForm.newPassword"
-                  type="password"
-                  label="New Password"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <va-input
-                  v-model="securityForm.confirmPassword"
-                  type="password"
-                  label="Confirm New Password"
-                  required
-                />
-              </div>
-
-              <div class="form-actions">
-                <va-button preset="primary" type="submit"> Update Password </va-button>
-              </div>
+            <form @submit.prevent="updatePassword" class="security-form-grid">
+              <va-input
+                v-model="securityForm.password"
+                type="password"
+                label="Mật khẩu hiện tại"
+                :rules="[(v) => !!v || 'Mật khẩu hiện tại là bắt buộc']"
+              />
+              <va-input
+                v-model="securityForm.newPassword"
+                type="password"
+                label="Mật khẩu mới"
+                :rules="[(v) => (v && v.length >= 5) || 'Mật khẩu phải có ít nhất 5 ký tự']"
+              />
+              <va-input
+                v-model="securityForm.confirmPassword"
+                type="password"
+                label="Xác nhận mật khẩu mới"
+                :rules="[(v) => v === securityForm.newPassword || 'Mật khẩu xác nhận không khớp']"
+              />
             </form>
           </va-card-content>
         </va-card>
+        <div class="form-actions">
+          <va-button
+            type="submit"
+            preset="primary"
+            @click="updatePassword"
+            icon="key"
+            color="danger"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+          >
+            Cập nhật mật khẩu
+          </va-button>
+        </div>
       </div>
-
-      <!-- Notifications Tab -->
-      <div v-if="activeTab === 'notifications'" class="notifications-section">
-        <va-card>
-          <va-card-title>Notification Preferences</va-card-title>
-          <va-card-content>
-            <div class="notification-settings">
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h3 class="setting-title">Email Notifications</h3>
-                  <p class="setting-description">Receive notifications via email</p>
-                </div>
-                <va-switch v-model="notificationSettings.emailNotifications" />
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h3 class="setting-title">Task Assignments</h3>
-                  <p class="setting-description">Get notified when you're assigned to a task</p>
-                </div>
-                <va-switch v-model="notificationSettings.taskAssignments" />
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h3 class="setting-title">Team Updates</h3>
-                  <p class="setting-description">Receive updates about team activities</p>
-                </div>
-                <va-switch v-model="notificationSettings.teamUpdates" />
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h3 class="setting-title">System Alerts</h3>
-                  <p class="setting-description">Get important system notifications</p>
-                </div>
-                <va-switch v-model="notificationSettings.systemAlerts" />
-              </div>
-
-              <div class="setting-item">
-                <div class="setting-info">
-                  <h3 class="setting-title">Weekly Digest</h3>
-                  <p class="setting-description">Receive a weekly summary of activities</p>
-                </div>
-                <va-switch v-model="notificationSettings.weeklyDigest" />
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <va-button preset="primary" @click="updateNotifications">
-                Save Preferences
-              </va-button>
-            </div>
-          </va-card-content>
-        </va-card>
-      </div>
-    </div>
+    </va-inner-loading>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .profile-page {
-  .profile-header {
-    background-color: var(--va-background-element);
-    border-radius: 8px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
-    .header-content {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-    }
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--va-text-primary);
+}
 
-    .avatar-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
+.form-card {
+  margin-bottom: 2rem;
+  border-radius: 12px;
+}
 
-      .profile-avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-    }
+.form-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 3rem;
+}
 
-    .profile-info {
-      .profile-name {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem;
-      }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
 
-      .profile-title {
-        color: var(--va-text-secondary);
-        margin: 0;
-      }
-    }
+.security-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-left: 1px solid var(--va-background-border);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+@media (max-width: 992px) {
+  .form-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
   }
-
-  .profile-tabs {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-
-    .form-group {
-      flex: 1;
-    }
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-actions {
-    margin-top: 1.5rem;
-  }
-
-  .skills-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-
-    .skill-chip {
-      margin-right: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-  }
-
-  .notification-settings {
-    .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--va-border);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .setting-info {
-        .setting-title {
-          font-size: 1rem;
-          font-weight: 500;
-          margin: 0 0 0.25rem;
-        }
-
-        .setting-description {
-          font-size: 0.875rem;
-          color: var(--va-text-secondary);
-          margin: 0;
-        }
-      }
-    }
-  }
-
-  .activity-timeline {
-    .activity-item {
-      display: flex;
-      gap: 1rem;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--va-border);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .activity-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: var(--va-primary);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .activity-content {
-        flex: 1;
-
-        .activity-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.25rem;
-
-          .activity-action {
-            font-weight: 500;
-          }
-
-          .activity-date {
-            font-size: 0.875rem;
-            color: var(--va-text-secondary);
-          }
-        }
-
-        .activity-description {
-          font-size: 0.875rem;
-          color: var(--va-text-secondary);
-          margin: 0;
-        }
-      }
-    }
+  .avatar-section {
+    border-left: none;
+    border-top: 1px solid var(--va-background-border);
+    padding-top: 2rem;
   }
 }
 
 @media (max-width: 768px) {
-  .profile-page {
-    .profile-header {
-      .header-content {
-        flex-direction: column;
-        text-align: center;
-      }
-    }
-
-    .form-row {
-      flex-direction: column;
-    }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 </style>

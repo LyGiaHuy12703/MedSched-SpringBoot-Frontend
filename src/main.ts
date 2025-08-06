@@ -14,10 +14,7 @@ import '@mdi/font/css/materialdesignicons.css'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import 'vuestic-ui/styles/essential.css'
 import 'material-design-icons-iconfont/dist/material-design-icons.css'
-
-import '@fullcalendar/core'
-import '@fullcalendar/daygrid'
-import '@fullcalendar/timegrid'
+import html2pdf from 'html2pdf.js'
 import tippy from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 

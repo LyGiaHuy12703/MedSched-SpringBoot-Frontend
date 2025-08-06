@@ -1,130 +1,93 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth.store'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 defineEmits(['toggle-sidebar'])
 
-const notifications = ref([
-  { id: 1, text: 'New user registered', time: '5 min ago' },
-  { id: 2, text: 'Server error reported', time: '2 hours ago' },
-  { id: 3, text: 'New order received', time: 'Yesterday' },
-])
+const router = useRouter()
+const authStore = useAuthStore()
 
-const searchQuery = ref('')
+// Bọc onMounted trong một hàm async
+onMounted(async () => {
+  try {
+    // Dùng 'await' để chờ cho hàm getInfo() thực thi xong
+    await authStore.getInfo()
+
+    // Bây giờ, authStore.isAuthenticated đã được cập nhật chính xác
+    if (!authStore.isAuthenticated) {
+      router.push('/login')
+    }
+  } catch (error) {
+    // Nếu getInfo() thất bại (ví dụ: token hết hạn), cũng nên chuyển về trang login
+    console.error('Failed to get user info:', error)
+    router.push('/login')
+  }
+})
+
 const showNotifications = ref(false)
 const showUserMenu = ref(false)
-const authStore = useAuthStore()
-const router = useRouter()
-const handleLogout = async () => {
-  await authStore.logout()
-  router.push('/login')
-}
 
-const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-  if (showNotifications.value) showUserMenu.value = false
-}
-
+// Toggle menu người dùng
 const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
   if (showUserMenu.value) showNotifications.value = false
 }
 
-const isDarkTheme = ref(false)
-
-const toggleTheme = () => {
-  isDarkTheme.value = !isDarkTheme.value
-  // In a real app, would toggle the Vuestic theme here
+// Đăng xuất
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
 }
 </script>
 
 <template>
-  <header class="app-header">
-    <div class="header-left">
-      <va-button
-        preset="secondary"
-        icon="menu"
-        size="small"
-        flat
-        class="sidebar-toggle"
-        @click="$emit('toggle-sidebar')"
-      />
+  <header class="staff-header">
+    <div class="header-content">
+      <!-- BÊN TRÁI: Sidebar Toggle & Breadcrumbs -->
+      <div class="header-left"></div>
 
-      <div class="search-container">
-        <va-input v-model="searchQuery" placeholder="Search..." class="search-input" size="small">
-          <template #prepend>
-            <va-icon name="search" />
-          </template>
-        </va-input>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <va-button
-        preset="secondary"
-        icon="brightness_6"
-        size="small"
-        flat
-        class="header-action"
-        @click="toggleTheme"
-      />
-
-      <div class="notification-dropdown">
-        <va-button
-          preset="secondary"
-          icon="notifications"
-          size="small"
-          flat
-          class="header-action"
-          @click="toggleNotifications"
-        />
-
-        <div v-if="showNotifications" class="dropdown-menu">
-          <div class="dropdown-header">Notifications</div>
-          <div class="dropdown-content">
-            <div v-for="notification in notifications" :key="notification.id" class="dropdown-item">
-              <div class="item-content">
-                <div class="item-text">{{ notification.text }}</div>
-                <div class="item-time">{{ notification.time }}</div>
+      <!-- BÊN PHẢI: Actions, Notifications, Theme Toggle, User Menu -->
+      <div class="header-right">
+        <!-- Menu người dùng -->
+        <div class="user-dropdown">
+          <div class="user-profile" @click="toggleUserMenu">
+            <va-avatar
+              :src="authStore.account?.user.avatarUrl || '/defaultAvatar.png'"
+              size="small"
+            />
+            <span class="username">{{ authStore.account?.user.name }}</span>
+          </div>
+          <div v-if="showUserMenu" class="dropdown-menu">
+            <div class="dropdown-header">
+              <div class="font-semibold">{{ authStore.account?.user.name || 'Admin User' }}</div>
+              <div class="text-xs text-[var(--va-text-secondary)]">
+                {{ authStore.account?.role.name || 'Administrator' }}
               </div>
             </div>
-          </div>
-          <div class="dropdown-footer">
-            <va-button preset="primary" size="small" text block> View all notifications </va-button>
-          </div>
-        </div>
-      </div>
-
-      <div class="user-dropdown">
-        <div class="user-profile" @click="toggleUserMenu">
-          <va-avatar
-            :src="authStore.account?.user.avatarUrl || '/defaultAvatar.png'"
-            size="small"
-          />
-          <span class="username">{{ authStore?.account?.user.name }}</span>
-        </div>
-
-        <div v-if="showUserMenu" class="dropdown-menu">
-          <div class="dropdown-header">User Menu</div>
-          <div class="dropdown-content">
-            <div class="dropdown-item">
-              <va-icon name="person" />
-              <span>My Profile</span>
+            <div class="dropdown-content">
+              <div class="dropdown-item" @click="$router.push('/staff/profiles')">
+                <va-icon name="person" />
+                <span>Hồ sơ</span>
+              </div>
+              <div class="dropdown-item" @click="$router.push('/staff/schedules')">
+                <va-icon name="schedule" />
+                <span>Lịch làm việc</span>
+              </div>
+              <div class="dropdown-item" @click="$router.push('/staff/help')">
+                <va-icon name="help" />
+                <span>Trợ giúp</span>
+              </div>
             </div>
-            <div class="dropdown-item">
-              <va-icon name="settings" />
-              <span>Account Settings</span>
+            <div class="dropdown-footer">
+              <va-button preset="secondary" size="small" icon="logout" block @click="handleLogout">
+                Đăng xuất
+              </va-button>
             </div>
-            <div class="dropdown-item">
-              <va-icon name="help" />
-              <span>Help Center</span>
-            </div>
-          </div>
-          <div class="dropdown-footer">
-            <va-button preset="secondary" size="small" icon="logout" @click="handleLogout" block>
-              Logout
-            </va-button>
           </div>
         </div>
       </div>
@@ -133,44 +96,93 @@ const toggleTheme = () => {
 </template>
 
 <style lang="scss" scoped>
-.app-header {
+.staff-header {
   height: 64px;
+  background-color: var(--va-background-element);
+  border-bottom: 1px solid var(--va-background-border);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  width: 100%;
+}
+
+.header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 100%;
   padding: 0 16px;
-  background-color: var(--va-background-element);
-  border-bottom: 1px solid var(--va-border);
 }
 
 .header-left,
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .sidebar-toggle {
-  margin-right: 16px;
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.breadcrumbs {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--va-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &.active {
+    color: var(--va-text-primary);
+    font-weight: 600;
+  }
 }
 
 .search-container {
-  display: flex;
-  align-items: center;
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+    align-items: center;
+  }
 
   .search-input {
     width: 240px;
   }
 }
 
-.header-action {
+.header-action,
+.context-action-btn {
   position: relative;
-  margin-left: 8px;
+}
+
+.context-action-btn {
+  @media (max-width: 992px) {
+    .action-text {
+      display: none;
+    }
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .notification-dropdown,
 .user-dropdown {
   position: relative;
-  margin-left: 8px;
 }
 
 .user-profile {
@@ -185,16 +197,13 @@ const toggleTheme = () => {
     background-color: var(--va-background);
   }
 
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
   .username {
     margin-left: 8px;
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
   }
 }
 
@@ -213,7 +222,7 @@ const toggleTheme = () => {
 
 .dropdown-header {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--va-border);
+  border-bottom: 1px solid var(--va-background-border);
   font-weight: 600;
 }
 
@@ -228,13 +237,13 @@ const toggleTheme = () => {
   transition: background-color 0.2s ease;
   display: flex;
   align-items: center;
+  gap: 12px;
 
   &:hover {
     background-color: var(--va-background);
   }
 
   .va-icon {
-    margin-right: 12px;
     color: var(--va-primary);
   }
 
@@ -255,18 +264,25 @@ const toggleTheme = () => {
 
 .dropdown-footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--va-border);
+  border-top: 1px solid var(--va-background-border);
 }
 
 @media (max-width: 768px) {
-  .search-container {
-    display: none;
+  .header-content {
+    padding: 0 12px;
   }
 
-  .user-profile {
-    .username {
-      display: none;
-    }
+  .header-left,
+  .header-right {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .context-action-btn,
+  .header-action {
+    width: 32px;
+    height: 32px;
   }
 }
 </style>

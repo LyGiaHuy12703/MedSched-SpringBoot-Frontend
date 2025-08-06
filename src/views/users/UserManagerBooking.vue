@@ -175,7 +175,6 @@ const appointmentStats = computed(() => {
   const confirmed = appointments.value.filter((apt) => apt.status === 'CONFIRMED').length
   const completed = appointments.value.filter((apt) => apt.status === 'COMPLETED').length
   const cancelled = appointments.value.filter((apt) => apt.status === 'CANCELLED').length
-  console.log('appointments.value', appointments.value)
   const totalSpent = appointments.value
     .filter((apt) => apt.invoice.status === 'PAID')
     .reduce((sum, apt) => sum + apt.invoice.totalAmount, 0)
@@ -226,29 +225,30 @@ const formatCurrency = (amount: number) => {
 }
 
 const getDaysUntilAppointment = (appointment: Appointment) => {
-  const appointmentDate = new Date(appointment.date + ' ' + appointment.time)
   const now = new Date()
+  const appointmentDate = new Date(appointment.date) // Chỉ lấy ngày, không cần giờ
 
-  // Lấy ngày, tháng, năm để so sánh
-  const aptDay = appointmentDate.getDate()
-  const aptMonth = appointmentDate.getMonth()
-  const aptYear = appointmentDate.getFullYear()
-  const nowDay = now.getDate()
-  const nowMonth = now.getMonth()
-  const nowYear = now.getFullYear()
+  // Đặt giờ, phút, giây về 0 để so sánh chính xác các ngày
+  now.setHours(0, 0, 0, 0)
+  appointmentDate.setHours(0, 0, 0, 0)
 
-  // So sánh ngày
-  if (aptYear === nowYear && aptMonth === nowMonth && aptDay === nowDay) {
+  // Tính số mili giây chênh lệch
+  const diffTime = appointmentDate.getTime() - now.getTime()
+
+  // Chuyển đổi sang số ngày
+  const diffDays = diffTime / (1000 * 60 * 60 * 24)
+
+  if (diffDays < 0) {
+    return 'Đã qua'
+  }
+  if (diffDays === 0) {
     return 'Hôm nay'
   }
-
-  // Tính số ngày chênh lệch chính xác (bao gồm cả ngày trong tương lai)
-  const diffTime = appointmentDate.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 1) return 'Ngày mai'
-  if (diffDays > 1) return `${diffDays} ngày mai`
-  return 'Đã qua'
+  if (diffDays === 1) {
+    return 'Ngày mai'
+  }
+  // Nếu lớn hơn 1, hiển thị số ngày còn lại
+  return `${diffDays} ngày nữa`
 }
 
 const openAppointmentDetail = (appointment: Appointment) => {
@@ -318,7 +318,6 @@ const handlePayment = async (amount: number, appointment: string) => {
   requestPayment.value.appointmentId = appointment
   toast.info('Đang tạo yêu cầu thanh toán, vui lòng chờ...')
   const paymentUrl = await paymentStore.createPaymentVNPay(requestPayment.value)
-  console.log({ paymentUrl })
   if (paymentUrl) {
     window.location.href = paymentUrl
   } else {

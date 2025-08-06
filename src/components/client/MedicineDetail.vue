@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="medicine-detail">
     <div class="modal-content">
@@ -21,18 +20,34 @@
       <div class="modal-section">
         <h3 class="modal-section-title">Chỉ định và liều lượng</h3>
         <div class="info-grid">
-          <p><strong>Chỉ định:</strong> {{ medicine.indications || 'Chưa có thông tin' }}</p>
-          <p><strong>Liều lượng:</strong> {{ medicine.dosage || 'Chưa có thông tin' }}</p>
+          <p>
+            <strong>Chỉ định:</strong>
+            {{ medicine.indications[0].description || 'Chưa có thông tin' }}
+          </p>
+          <p>
+            <strong>Liều lượng:</strong>
+            {{ medicine.dosages[0].description || 'Chưa có thông tin' }}
+          </p>
+          <p>
+            <strong>Tần suất:</strong> {{ medicine.dosages[0].frequency || 'Chưa có thông tin' }}
+          </p>
         </div>
       </div>
       <div class="modal-section">
         <h3 class="modal-section-title">Cảnh báo</h3>
         <div class="info-grid">
           <p>
-            <strong>Chống chỉ định:</strong> {{ medicine.contraindications || 'Chưa có thông tin' }}
+            <strong>Chống chỉ định:</strong>
+            {{ medicine.contraindications[0].description || 'Chưa có thông tin' }}
           </p>
-          <p><strong>Thận trọng:</strong> {{ medicine.cautions || 'Chưa có thông tin' }}</p>
-          <p><strong>Tác dụng phụ:</strong> {{ medicine.sideEffects || 'Chưa có thông tin' }}</p>
+          <p>
+            <strong>Thận trọng:</strong>
+            {{ medicine.cautions[0].description || 'Chưa có thông tin' }}
+          </p>
+          <p>
+            <strong>Tác dụng phụ:</strong>
+            {{ medicine.sideEffects[0].description || 'Chưa có thông tin' }}
+          </p>
         </div>
       </div>
       <div class="modal-section">

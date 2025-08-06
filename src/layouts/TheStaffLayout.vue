@@ -148,7 +148,6 @@ const breadcrumbs = computed(() => {
   top: 0;
   background: var(--va-background-element);
   padding: 1rem 0;
-  z-index: 1;
 }
 
 .content-container {

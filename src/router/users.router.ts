@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 const userRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'Home',
+    name: 'dashboard',
     component: () => import('@/views/users/HomePage.vue'),
     meta: {
       layout: 'Client',

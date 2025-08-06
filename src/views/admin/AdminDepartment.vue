@@ -1,59 +1,75 @@
 <template>
   <va-inner-loading :loading="departmentStore.loading">
-    <va-card>
-      <va-card-content>
-        <div class="justify-content-around my-3">
-          <div class="my-3"><h1>Quản lý bộ phận (Khoa)</h1></div>
-          <div><va-button @click="onShowModalAdd">Thêm bộ phận</va-button></div>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6 mb-6 my-3">
+    <va-card class="shadow-sm">
+      <va-card-content class="p-6">
+        <h1 class="text-3xl font-semibold text-gray-800 text-center mb-6">
+          Quản lý bộ phận (Khoa)
+        </h1>
+
+        <div class="d-flex gap-4 mb-6 align-center">
           <va-input
             v-model="searchQuery"
             placeholder="Nhập mã bộ phận, tên, mô tả..."
             clearable
-            class="filter-input"
-            aria-label="Tìm kiếm bác sĩ theo tên"
+            class="input-field flex-grow"
+            aria-label="Tìm kiếm bộ phận theo tên"
           >
             <template #prependInner>
-              <va-icon name="search" color="#718096" />
+              <va-icon name="search" color="text-gray-600" size="medium" />
             </template>
           </va-input>
-
-          <div class="filter-actions">
-            <va-button preset="secondary" @click="resetFilters" class="action-button">
-              Xóa bộ lọc
-            </va-button>
-            <va-button preset="primary" @click="handleSearch" class="action-button">
-              Tìm kiếm
-            </va-button>
-          </div>
+          <va-button preset="secondary" @click="resetFilters" class="action-button px-6 py-2">
+            Xóa bộ lọc
+          </va-button>
+          <va-button preset="primary" @click="handleSearch" class="action-button px-6 py-2">
+            Tìm kiếm
+          </va-button>
         </div>
-        <VaDataTable :items="departmentList" :columns="columns" hoverable>
+        <div class="justify-end mb-2">
+          <va-button preset="primary" @click="onShowModalAdd" class="action-button px-6 py-2">
+            Thêm bộ phận
+          </va-button>
+        </div>
+        <VaDataTable :items="departmentList" :columns="columns" hoverable class="custom-table">
           <template #cell(id)="slotProps">
             dept0{{ slotProps.rowIndex + 1 + (currentPage - 1) * pageSize }}
           </template>
-
           <template #cell(actions)="slotProps">
-            <VaButton
-              preset="plain"
-              icon="visibility"
-              @click="onShowDetailModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="edit"
-              class="ml-3"
-              @click="onShowEditModal(slotProps.rowData)"
-            />
-            <VaButton
-              preset="plain"
-              icon="delete"
-              class="ml-3"
-              @click="onShowDeleteModal(slotProps.rowData)"
-            />
+            <div class="d-flex justify-center gap-2">
+              <VaButton
+                preset="primary"
+                size="small"
+                icon="visibility"
+                @click="onShowDetailModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xem chi tiết"
+                >Xem chi tiết</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                color="warning"
+                icon="edit"
+                @click="onShowEditModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Chỉnh sửa"
+                >Chỉnh sửa</VaButton
+              >
+              <VaButton
+                preset="primary"
+                size="small"
+                color="danger"
+                icon="delete"
+                @click="onShowDeleteModal(slotProps.rowData)"
+                class="action-button px-3 py-2"
+                title="Xóa"
+                >Xóa</VaButton
+              >
+            </div>
           </template>
         </VaDataTable>
-        <div class="my-3 d-flex pagination-container">
+
+        <div class="d-flex justify-end mt-6 pagination-container my-2">
           <VaPagination
             v-model="currentPage"
             :total="total"
@@ -61,10 +77,20 @@
             :rows-per-page="pageSize"
             :rows-per-page-options="[5, 10, 20]"
             :visible-pages="5"
-            class="mt-6"
+            class="custom-pagination"
             @update:modelValue="onPageChange"
           />
         </div>
+
+        <div class="d-flex gap-4 mt-6">
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Số mục đã lọc: <va-chip color="danger" outline>{{ total <= 5 ? total : 5 }}</va-chip>
+          </va-alert>
+          <va-alert color="secondary" outline class="bg-blue-50 border-blue-200">
+            Tổng số mục: <va-chip color="danger" outline>{{ total }}</va-chip>
+          </va-alert>
+        </div>
+
         <va-modal v-model="isShowAddModal" hide-default-actions @close="onCloseModalAdd">
           <AddDepartment
             :department-data="departmentData"
@@ -93,20 +119,11 @@
             @close-confirm="onCloseModalDelete"
           />
         </va-modal>
-        <div class="d-flex">
-          <VaAlert class="!mt-6" color="info" outline>
-            Number of filtered items:
-            <VaChip>{{ total <= 5 ? total : 5 }}</VaChip>
-          </VaAlert>
-          <VaAlert class="!mt-6" color="info" outline>
-            Total items:
-            <VaChip>{{ total }}</VaChip>
-          </VaAlert>
-        </div>
       </va-card-content>
     </va-card>
   </va-inner-loading>
 </template>
+
 <script setup lang="ts">
 import DeleteConfirm from '@/components/DeleteConfirm.vue'
 import AddDepartment from '@/components/department/AddDepartment.vue'
@@ -123,6 +140,12 @@ const columns = ref([
   { key: 'id', name: 'id', label: 'STT', field: 'id', sortable: true },
   { key: 'name', name: 'name', label: 'Tên bộ phận', field: 'name' },
   { key: 'description', name: 'description', label: 'Mô tả', field: 'description' },
+  {
+    key: 'examinationTime',
+    name: 'examinationTime',
+    label: 'Thời gian khám chữa bệnh',
+    field: 'examinationTime',
+  },
   { key: 'actions', name: 'actions', label: 'Hành động', field: 'actions', sortable: false },
 ])
 const searchQuery = ref('')
@@ -230,6 +253,8 @@ function onCloseModalDelete() {
 const departmentData = ref<DepartmentRequest>({
   name: '',
   description: '',
+  examinationTime: 0,
+  serviceId: [],
 })
 async function onAddDepartment(department: DepartmentRequest) {
   try {
@@ -245,9 +270,9 @@ async function onAddDepartment(department: DepartmentRequest) {
 /**
  * EDIT DEPARTMENT
  */
-async function onEditDepartment(department: DepartmentRequest) {
+async function onEditDepartment(id: string, request: DepartmentRequest) {
   try {
-    await departmentStore.updateDepartment(selectedDepartment.value!.id, department)
+    await departmentStore.updateDepartment(id, request)
     toast.success('Cập nhật bộ phận thành công!')
     isShowEditModal.value = false
     await fetchInitData()
@@ -273,12 +298,113 @@ async function onDeleteDepartment() {
 }
 /**=========END============ */
 </script>
+
 <style scoped lang="scss">
-.pagination-container {
-  justify-content: end;
-  margin-top: 40px;
+.input-field {
+  :deep(.va-input-wrapper) {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+    &:hover {
+      border-color: var(--va-primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  }
+  :deep(.va-input-wrapper__field) {
+    font-size: 1rem;
+    color: #1e293b;
+  }
 }
-:deep(.va-data-table__table-thead) {
-  background-color: #ecf0f1 !important; /* đổi màu header */
+
+.custom-table {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  :deep(.va-data-table__table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  :deep(.va-data-table__table-thead) {
+    background-color: #e5e7eb !important;
+    th {
+      font-weight: 600;
+      color: #1e293b;
+      padding: 1.25rem;
+      border-bottom: 2px solid #d1d5db;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+  }
+  :deep(.va-data-table__table-row) {
+    transition: background-color 0.3s ease;
+    &:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    &:hover {
+      background-color: #d1d5db !important;
+    }
+    td {
+      padding: 1.25rem;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+      font-size: 1rem;
+    }
+  }
+}
+
+.action-button {
+  :deep(.va-button) {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+.pagination-container {
+  justify-content: flex-end;
+}
+
+.custom-pagination {
+  :deep(.va-pagination__item) {
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+    &:hover {
+      background-color: #e5e7eb;
+      transform: scale(1.1);
+    }
+    &.va-pagination__item--active {
+      background-color: var(--va-primary);
+      color: #ffffff;
+    }
+  }
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.text-gray-600 {
+  color: #4b5563;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.text-gray-800 {
+  color: #1e293b;
+}
+:deep(.va-data-table__table-th) {
+  --va-data-table-align: center !important;
 }
 </style>

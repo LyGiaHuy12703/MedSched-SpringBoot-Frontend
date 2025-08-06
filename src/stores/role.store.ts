@@ -81,7 +81,6 @@ export const useRoleStore = defineStore('useRoleStore', {
       this.error = null
       try {
         const res = await roleService.updateRoles(id, request)
-        console.log({ res })
         if (res.success) {
           const index = this.roles.findIndex((role) => role.id === id)
           if (index !== -1) {

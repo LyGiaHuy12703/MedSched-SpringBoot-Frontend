@@ -85,6 +85,42 @@ export const useMedicalRecordStore = defineStore('useMedicalRecordStore', {
         this.loading = false
       }
     },
+
+    async updateMedicalRecordStatus(
+      id: string,
+      status: 'DA_IN_DON' | 'DA_CAP_THUOC' | 'TAI_CAP_THUOC',
+    ): Promise<ClientResponse<APIResponse<MedicalRecord>>> {
+      if (!id || !['DA_IN_DON', 'DA_CAP_THUOC', 'TAI_CAP_THUOC'].includes(status)) {
+        this.error = 'ID bệnh án hoặc trạng thái không hợp lệ.'
+        throw new Error(this.error)
+      }
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicalRecordService.updateMedicalRecordStatus(id)
+        if (res.success) {
+          const index = this.medicalRecords.findIndex((record) => record.id === id)
+          if (index !== -1) {
+            this.medicalRecords[index] = { ...this.medicalRecords[index], status }
+          }
+          if (this.medicalRecord?.id === id) {
+            this.medicalRecord = { ...this.medicalRecord, status }
+          }
+          if (this.selectedMedicalRecord?.id === id) {
+            this.selectedMedicalRecord = { ...this.selectedMedicalRecord, status }
+          }
+          return res
+        } else {
+          this.error = res?.error?.details?.error || 'Cập nhật trạng thái thất bại.'
+          throw new Error(this.error)
+        }
+      } catch (error) {
+        throw new Error(this.error || 'Cập nhật trạng thái thất bại.')
+      } finally {
+        this.loading = false
+      }
+    },
+
     async deleteMedicalRecord(id: string): Promise<ClientResponse<APIResponse<string>>> {
       this.loading = true
       this.error = null

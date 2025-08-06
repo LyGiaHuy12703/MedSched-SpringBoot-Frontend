@@ -1,125 +1,119 @@
-<script setup lang="ts">
-import { useAuthStore } from '@/stores/auth.store'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-defineEmits(['toggle-sidebar'])
-
-const notifications = ref([
-  { id: 1, text: 'New task assigned', time: '5 min ago' },
-  { id: 2, text: 'Customer support ticket #123', time: '2 hours ago' },
-  { id: 3, text: 'Meeting reminder: Team sync', time: 'Tomorrow, 10:00 AM' },
-])
-
-const searchQuery = ref('')
-const showNotifications = ref(false)
-const showUserMenu = ref(false)
-const authStore = useAuthStore()
-const router = useRouter()
-const handleLogout = async () => {
-  await authStore.logout()
-  router.push('/login')
-}
-
-const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-  if (showNotifications.value) showUserMenu.value = false
-}
-
-const toggleUserMenu = () => {
-  showUserMenu.value = !showUserMenu.value
-  if (showUserMenu.value) showNotifications.value = false
-}
-</script>
-
+```vue
 <template>
   <header class="staff-header">
     <div class="header-left">
       <va-button
         preset="secondary"
         icon="menu"
-        size="small"
-        flat
-        class="sidebar-toggle"
         @click="$emit('toggle-sidebar')"
+        aria-label="Toggle sidebar"
       />
 
-      <div class="search-container">
-        <va-input
-          v-model="searchQuery"
-          placeholder="Search tasks, tickets..."
-          class="search-input"
-          size="small"
-        >
-          <template #prepend>
-            <va-icon name="search" />
-          </template>
-        </va-input>
-      </div>
+      <va-input v-model="searchQuery" placeholder="Tìm kiếm..." class="search-input" clearable>
+        <template #prependInner>
+          <va-icon name="search" />
+        </template>
+      </va-input>
     </div>
 
     <div class="header-right">
-      <div class="notification-dropdown">
-        <va-button
-          preset="secondary"
-          icon="notifications"
-          size="small"
-          flat
-          class="header-action"
-          @click="toggleNotifications"
-        />
-
-        <div v-if="showNotifications" class="dropdown-menu">
-          <div class="dropdown-header">Notifications</div>
-          <div class="dropdown-content">
-            <div v-for="notification in notifications" :key="notification.id" class="dropdown-item">
-              <div class="item-content">
-                <div class="item-text">{{ notification.text }}</div>
-                <div class="item-time">{{ notification.time }}</div>
-              </div>
+      <va-dropdown placement="bottom-end">
+        <template #anchor>
+          <div class="user-profile">
+            <va-avatar :src="user.avatarUrl" size="32px" />
+            <span class="username">{{ user.name }}</span>
+          </div>
+        </template>
+        <va-dropdown-content class="user-dropdown">
+          <div class="user-info-full">
+            <va-avatar :src="user.avatarUrl" size="large" />
+            <div class="user-details">
+              <div class="user-name-full">{{ user.name }}</div>
+              <div class="user-email">{{ user.email }}</div>
             </div>
           </div>
-          <div class="dropdown-footer">
-            <va-button preset="primary" size="small" text block> View all notifications </va-button>
-          </div>
-        </div>
-      </div>
-
-      <div class="user-dropdown">
-        <div class="user-profile" @click="toggleUserMenu">
-          <va-avatar
-            :src="authStore.account?.user.avatarUrl || '/defaultAvatar.png'"
-            size="small"
-          />
-          <span class="username">{{ authStore.account?.user.name || 'Admin' }} </span>
-        </div>
-
-        <div v-if="showUserMenu" class="dropdown-menu">
-          <div class="dropdown-header">Admin Menu</div>
-          <div class="dropdown-content">
-            <div class="dropdown-item" @click="$router.push('/admin/profiles')">
-              <va-icon name="person" />
-              <span>My Profile</span>
-            </div>
-            <div class="dropdown-item">
-              <va-icon name="schedule" />
-              <span>My Schedule</span>
-            </div>
-            <div class="dropdown-item">
-              <va-icon name="help" />
-              <span>Help Center</span>
-            </div>
-          </div>
-          <div class="dropdown-footer">
-            <va-button preset="secondary" size="small" icon="logout" block @click="handleLogout">
-              Logout
-            </va-button>
-          </div>
-        </div>
-      </div>
+          <va-list>
+            <va-list-item @click="navigateToProfile">
+              <va-list-item-section icon> <va-icon name="person" /> </va-list-item-section>
+              <va-list-item-section>Hồ sơ của tôi</va-list-item-section>
+            </va-list-item>
+            <va-list-item @click="handleLogout">
+              <va-list-item-section icon> <va-icon name="logout" /> </va-list-item-section>
+              <va-list-item-section>Đăng xuất</va-list-item-section>
+            </va-list-item>
+          </va-list>
+        </va-dropdown-content>
+      </va-dropdown>
     </div>
   </header>
 </template>
+
+<script setup lang="ts">
+import { useAuthStore } from '@/stores/auth.store'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+defineEmits(['toggle-sidebar'])
+
+// --- STATE ---
+const authStore = useAuthStore()
+const router = useRouter()
+const searchQuery = ref('')
+
+// Dữ liệu giả lập cho thông báo
+const notifications = ref([
+  {
+    id: 1,
+    icon: 'task_alt',
+    text: 'Công việc mới',
+    time: '5 phút trước',
+    color: 'success',
+    unread: true,
+  },
+  {
+    id: 2,
+    icon: 'support_agent',
+    text: 'Yêu cầu hỗ trợ',
+    time: '2 giờ trước',
+    color: 'info',
+    unread: true,
+  },
+  {
+    id: 3,
+    icon: 'event_available',
+    text: 'Họp team',
+    time: 'Ngày mai',
+    color: 'primary',
+    unread: false,
+  },
+])
+
+const unreadCount = computed(() => notifications.value.filter((n) => n.unread).length)
+
+// Lấy thông tin người dùng từ store
+const user = computed(
+  () =>
+    authStore.account?.user || {
+      name: 'Admin',
+      email: 'admin@medsched.com',
+      avatarUrl: 'https://randomuser.me/api/portraits/men/1.jpg',
+    },
+)
+
+// --- METHODS ---
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
+
+const navigateToProfile = () => {
+  router.push('/admin/profiles')
+}
+
+const markAllAsRead = () => {
+  notifications.value.forEach((n) => (n.unread = false))
+}
+</script>
 
 <style lang="scss" scoped>
 .staff-header {
@@ -129,133 +123,107 @@ const toggleUserMenu = () => {
   justify-content: space-between;
   padding: 0 16px;
   background-color: var(--va-background-element);
-  border-bottom: 1px solid var(--va-border);
+  border-bottom: 1px solid var(--va-background-border);
+  position: sticky;
+  top: 0;
+  z-index: 999;
 }
 
 .header-left,
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-.sidebar-toggle {
-  margin-right: 16px;
-}
-
-.search-container {
-  display: flex;
-  align-items: center;
-
-  .search-input {
-    width: 240px;
-  }
-}
-
-.header-action {
-  position: relative;
-  margin-left: 8px;
-}
-
-.notification-dropdown,
-.user-dropdown {
-  position: relative;
-  margin-left: 8px;
+.search-input {
+  width: 240px;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 24px;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--va-background);
-  }
-
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
 
   .username {
-    margin-left: 8px;
     font-weight: 500;
+    color: var(--va-text-primary);
   }
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 280px;
+.notification-dropdown,
+.user-dropdown {
   background-color: var(--va-background-element);
+  width: 300px;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  margin-top: 8px;
-  overflow: hidden;
+  box-shadow: var(--va-box-shadow);
+  border: 1px solid var(--va-background-border);
 }
 
 .dropdown-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--va-border);
-  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--va-background-border);
 }
 
 .dropdown-content {
-  max-height: 320px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
-.dropdown-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+.notification-item {
   display: flex;
   align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--va-background-border);
 
-  &:hover {
-    background-color: var(--va-background);
+  &:last-child {
+    border-bottom: none;
   }
 
-  .va-icon {
-    margin-right: 12px;
-    color: var(--va-primary);
+  &.unread {
+    background-color: rgba(var(--va-primary-rgb), 0.05);
   }
 
   .item-content {
-    width: 100%;
+    flex-grow: 1;
   }
-
   .item-text {
     font-size: 0.875rem;
-    margin-bottom: 4px;
   }
-
   .item-time {
     font-size: 0.75rem;
     color: var(--va-text-secondary);
   }
 }
 
-.dropdown-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--va-border);
+.user-info-full {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--va-background-border);
+
+  .user-name-full {
+    font-weight: 600;
+  }
+  .user-email {
+    font-size: 0.875rem;
+    color: var(--va-text-secondary);
+  }
 }
 
 @media (max-width: 768px) {
-  .search-container {
-    display: none;
+  .staff-header {
+    padding: 0 8px;
   }
-
-  .user-profile {
-    .username {
-      display: none;
-    }
+  .search-input {
+    display: none;
   }
 }
 </style>
+```

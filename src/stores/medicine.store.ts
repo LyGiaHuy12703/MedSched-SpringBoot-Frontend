@@ -100,5 +100,90 @@ export const useMedicineStore = defineStore('useMedicineStore', {
         this.loading = false
       }
     },
+    async fetchCautions(): Promise<ClientResponse<APIResponse<string[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicineService.fetchCautions()
+        if (res.success) {
+          return res.data
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error)
+        }
+      } catch (error) {
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchIndications(): Promise<ClientResponse<APIResponse<string[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicineService.fetchIndications()
+        if (res.success) {
+          return res.data
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error)
+        }
+      } catch (error) {
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchContraindications(): Promise<ClientResponse<APIResponse<string[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicineService.fetchContraindications()
+        if (res.success) {
+          return res.data
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error)
+        }
+      } catch (error) {
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchDosage(): Promise<ClientResponse<APIResponse<string[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicineService.fetchDosage()
+        if (res.success) {
+          return res.data
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error)
+        }
+      } catch (error) {
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchSideEffect(): Promise<ClientResponse<APIResponse<string[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await medicineService.fetchSideEffect()
+        if (res.success) {
+          return res.data
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error)
+        }
+      } catch (error) {
+        throw new Error(this.error)
+      } finally {
+        this.loading = false
+      }
+    },
   },
 })

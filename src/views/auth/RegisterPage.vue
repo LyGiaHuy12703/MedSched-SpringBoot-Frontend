@@ -150,7 +150,6 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
-
 const handleVerifyCode = async () => {
   if (verificationCode.value.length !== 6) {
     toast.error('Vui lòng nhập mã xác thực 6 số')
@@ -167,14 +166,16 @@ const handleVerifyCode = async () => {
 
     if (response.data?.access_token) {
       authService.updateLocalStorage(response.data)
-      await authStore.setUserInfo((await authService.getInfo())?.data ?? null)
+      await authStore.getInfo() // Sử dụng getInfo thay vì setUserInfo
       authStore.loggedIn = true
-      toast.success('Xác thực thành công!')
       router.push({ name: 'Home' })
+      setTimeout(() => {
+        toast.success('Xác thực đăng ký thành công!')
+      }, 1000)
     } else {
       toast.error('Mã xác thực không hợp lệ')
     }
-  } catch (error) {
+  } catch (error: any) {
     toast.error(error.response?.data?.error || 'Đã có lỗi xảy ra')
   } finally {
     loading.value = false

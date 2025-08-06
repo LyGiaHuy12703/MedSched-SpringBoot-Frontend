@@ -15,7 +15,6 @@ export const usePaymentStore = defineStore('usePaymentStore', {
       try {
         const response = await paymentService.PaymentVNPay(request)
         const paymentInfo = response // Giả sử API trả về trong `data`
-        console.log({ paymentInfo })
         if (paymentInfo && paymentInfo.data?.status === 'OK' && paymentInfo.data?.url) {
           // THAY ĐỔI 2: Trả về URL thanh toán nếu thành công
           return paymentInfo.data.url

@@ -3,12 +3,19 @@ import type { CreateStaffRequest, Staff, UpdateStaffRequest } from '@/interfaces
 import apiClient from '@/utils/httpClient'
 
 const staffService = {
-  async fetchAll(page: number, size: number, departmentId?: string, search?: string) {
-    return await apiClient.get('admin/staff', {
+  async fetchAll(
+    page: number,
+    size: number,
+    departmentId?: string,
+    search?: string,
+    role?: string,
+  ) {
+    return await apiClient.get('staff', {
       params: {
         page,
         size,
         ...(departmentId ? { departmentId } : {}),
+        ...(role ? { role } : ''),
         ...(search ? { filter: search } : {}),
       },
     })
@@ -23,7 +30,7 @@ const staffService = {
     return await apiClient.post('admin/staff', formData)
   },
   async fetchStaffById(id: string | string[]): Promise<ClientResponse<APIResponse<Staff>>> {
-    return await apiClient.get(`admin/staff/${id}`)
+    return await apiClient.get(`staff/${id}`)
   },
   async deleteStaff(id: string): Promise<ClientResponse<APIResponse<string>>> {
     return await apiClient.delete(`admin/staff/${id}`)

@@ -115,15 +115,16 @@ const onCloseModal = () => {
   background: #ffffff;
   border: 1px solid #e0e0e0;
   max-width: 350px;
+  height: 100%;
   margin: 0 auto;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
 
-  &:hover {
+  /* &:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
+  } */
 }
 
 .card-content {
@@ -142,7 +143,7 @@ const onCloseModal = () => {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    border: 4px solid #154EC1;
+    border: 4px solid #154ec1;
     transition: transform 0.3s ease;
 
     &:hover {
@@ -155,7 +156,7 @@ const onCloseModal = () => {
     top: -10px;
     left: 50%;
     transform: translateX(-50%);
-    background: #154EC1;
+    background: #154ec1;
     color: #ffffff;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -180,12 +181,12 @@ const onCloseModal = () => {
 
 .doctor-name-link {
   cursor: pointer;
-  color: #154EC1;
+  color: #154ec1;
   text-decoration: none;
   transition: color 0.2s ease;
 
   &:hover {
-    color: #154EC1;
+    color: #154ec1;
     text-decoration: underline;
   }
 }
@@ -211,7 +212,7 @@ const onCloseModal = () => {
   color: #757575;
 
   .icon {
-    color: #154EC1;
+    color: #154ec1;
     font-size: 1rem;
   }
 }
@@ -232,11 +233,11 @@ const onCloseModal = () => {
 
   &.view-profile {
     background: transparent;
-    border: 1px solid #154EC1;
-    color: #154EC1;
+    border: 1px solid #154ec1;
+    color: #154ec1;
 
     &:hover {
-      background: #154EC1;
+      background: #154ec1;
       color: #ffffff;
     }
   }
@@ -246,7 +247,7 @@ const onCloseModal = () => {
     color: #ffffff;
 
     &:hover {
-      background: #154EC1;
+      background: #154ec1;
       transform: translateY(-1px);
     }
   }

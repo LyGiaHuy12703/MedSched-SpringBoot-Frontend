@@ -54,7 +54,6 @@ const onRequest = (config: AxiosRequestConfig): AxiosRequestConfig => {
     headers: newHeaders,
   }
 
-  // console.log('onRequest - Final Config:', requestConfig);
   return requestConfig
 }
 

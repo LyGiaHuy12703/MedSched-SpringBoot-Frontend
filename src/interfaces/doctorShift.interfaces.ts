@@ -24,7 +24,7 @@ export type DoctorShiftCreateRequest = {
   startTime: string
   endTime: string
   dayWork: string
-  staffId: string
+  staffId: string[]
 }
 export type DoctorShiftStatusUpdateRequest = {
   status: string
@@ -34,4 +34,31 @@ export type ScheduleBinding = {
   start: string
   end: string
   date: string
+}
+export interface UserInfo {
+  id: string
+  name: string
+  avatar?: string
+}
+
+// Interface rút gọn cho thông tin Staff
+export interface StaffInfo {
+  id: string
+  position: string
+  user: UserInfo
+}
+
+// Interface rút gọn cho thông tin DoctorShift
+export interface ShiftInfo {
+  id: string
+  dayWork: string
+  startTime: string
+  endTime: string
+}
+
+export interface StaffDoctorShift {
+  id: string
+  status: 'PENDING' | 'APPROVED' | 'CANCELED' | 'COMPLETED' | 'IN_PROGRESS'
+  staff: StaffInfo
+  doctorShift: ShiftInfo
 }

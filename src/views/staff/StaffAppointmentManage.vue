@@ -2,28 +2,36 @@
   <va-card>
     <va-card-content>
       <h4 class="va-h4 text-center">Quản lý lịch hẹn của bác sĩ</h4>
-      <p class="text-center">Xem và thực hiện chẩn đoán cho các lịch hẹn đã được xác nhận.</p>
+      <p class="text-center text-gray-600">
+        Xem và thực hiện chẩn đoán cho các lịch hẹn đã được xác nhận.
+      </p>
 
       <!-- BỘ LỌC VÀ TÌM KIẾM -->
-      <div class="d-flex my-4 selected-container">
-        <va-select
-          v-model="filterStatus"
-          :options="optionsStatus"
-          label="Lọc theo trạng thái"
-          value-by="value"
-          text-by="text"
-          class="status-filter"
+      <div class="d-flex my-4 selected-container justify-between">
+        <va-tabs
+          v-model="activeTab"
+          grow
+          class="status-tabs"
           @update:model-value="fetchAppointments"
-        />
-        <va-input
-          v-model="searchQuery"
-          placeholder="Tìm theo tên bệnh nhân hoặc mã lịch hẹn"
-          class="search-input"
         >
-          <template #prepend-inner>
-            <va-icon name="search" />
-          </template>
-        </va-input>
+          <va-tab name="confirmed" value="1">
+            <va-icon name="check_circle" class="mr-2" /> Đã xác nhận
+          </va-tab>
+          <va-tab name="completed" value="3">
+            <va-icon name="done_all" class="mr-2" /> Hoàn thành
+          </va-tab>
+          <va-tab name="cancelled" value="2">
+            <va-icon name="cancel" class="mr-2" /> Đã hủy
+          </va-tab>
+        </va-tabs>
+        <va-input
+          v-model="filterDate"
+          type="date"
+          label="Lọc theo ngày"
+          class="date-input input-field"
+          clearable
+          :rules="[(v) => !v || isValidDate(v) || 'Ngày không hợp lệ']"
+        />
       </div>
 
       <!-- BẢNG DỮ LIỆU -->
@@ -31,7 +39,7 @@
         :items="filteredAppointments"
         :columns="columns"
         class="custom-table"
-        no-data-html="Không có lịch hẹn nào."
+        no-data-html="<div class='text-center text-gray-500 py-4'>Không có lịch hẹn nào.</div>"
         hoverable
       >
         <template #cell(patient)="slotProps">
@@ -39,24 +47,28 @@
             <va-avatar
               :src="slotProps.rowData.user?.avatar || '/defaultAvatar.png'"
               size="small"
-              class="mr-2"
+              class="mr-3"
             />
             <div>
-              <div class="font-weight-bold">{{ slotProps.rowData.name }}</div>
-              <div class="va-text-secondary">{{ slotProps.rowData.user?.email }}</div>
+              <div class="font-semibold text-gray-800">{{ slotProps.rowData.name }}</div>
+              <div class="text-sm text-gray-500">{{ slotProps.rowData.user?.email }}</div>
             </div>
           </div>
         </template>
 
         <template #cell(appointmentDateTime)="slotProps">
           <div>
-            <div class="font-weight-bold">{{ formatTime(slotProps.rowData.time) }}</div>
-            <div class="va-text-secondary">{{ formatDate(slotProps.rowData.date) }}</div>
+            <div class="font-semibold text-gray-800">{{ formatTime(slotProps.rowData.time) }}</div>
+            <div class="text-sm text-gray-500">{{ formatDate(slotProps.rowData.date) }}</div>
           </div>
         </template>
 
         <template #cell(status)="slotProps">
-          <va-chip size="small" :color="getStatusColor(slotProps.rowData.status)">
+          <va-chip
+            size="small"
+            :color="getStatusColor(slotProps.rowData.status)"
+            class="font-medium"
+          >
             <div v-if="getStatusText(slotProps.rowData.status) === 'CONFIRMED'">Đã xác nhận</div>
             <div v-else-if="getStatusText(slotProps.rowData.status) === 'COMPLETED'">
               Đã hoàn thành
@@ -66,107 +78,118 @@
         </template>
 
         <template #cell(actions)="slotProps">
-          <va-button
-            v-if="slotProps.rowData.status !== 'COMPLETED'"
-            preset="primary"
-            class="mr-2"
-            @click="openDetailModal(slotProps.rowData)"
-            title="Xem chi tiết lịch hẹn"
-          >
-            <va-icon name="visibility" />
-            Xem chi tiết
-          </va-button>
-          <va-button
-            v-if="slotProps.rowData.status === 'COMPLETED'"
-            preset="primary"
-            class="mr-2"
-            @click="onOpenModalPrescriptions(slotProps.rowData)"
-          >
-            <va-icon name="visibility" />
-            Chi tiết chẩn đoán
-          </va-button>
-          <va-button
-            color="primary"
-            v-if="slotProps.rowData.status === 'CONFIRMED'"
-            @click="openAddDiagnosisModal(slotProps.rowData)"
-            title="Thực hiện chẩn đoán"
-          >
-            <va-icon name="medical_services" />
-            Chẩn đoán
-          </va-button>
-          <va-button
-            color="info"
-            v-if="slotProps.rowData.status === 'COMPLETED'"
-            @click="viewMedicalRecord(slotProps.rowData.id)"
-            title="Xem hồ sơ bệnh án"
-          >
-            <va-icon name="description" />
-          </va-button>
+          <div class="d-flex align-center gap-2">
+            <va-button
+              v-if="slotProps.rowData.status !== 'COMPLETED'"
+              preset="primary"
+              icon="visibility"
+              @click="openDetailModal(slotProps.rowData)"
+              title="Xem chi tiết lịch hẹn"
+              class="action-button"
+              >Xem chi tiết</va-button
+            >
+            <va-button
+              v-if="slotProps.rowData.status === 'COMPLETED'"
+              preset="primary"
+              icon="visibility"
+              @click="onOpenModalPrescriptions(slotProps.rowData)"
+              title="Chi tiết chẩn đoán"
+              class="action-button"
+              >Chi tiết chẩn đoán</va-button
+            >
+            <va-button
+              v-if="slotProps.rowData.status === 'CONFIRMED'"
+              preset="primary"
+              icon="medical_services"
+              @click="openAddDiagnosisModal(slotProps.rowData)"
+              title="Thực hiện chẩn đoán"
+              class="action-button"
+              >Chẩn đoán</va-button
+            >
+            <va-button
+              v-if="slotProps.rowData.status === 'COMPLETED'"
+              preset="primary"
+              icon="description"
+              color="success"
+              @click="generatePDF(slotProps.rowData)"
+              title="Xem hồ sơ bệnh án"
+              class="action-button"
+              >In chẩn đoán</va-button
+            >
+          </div>
         </template>
       </va-data-table>
     </va-card-content>
   </va-card>
 
   <!-- MODAL CHI TIẾT LỊCH HẸN -->
-  <va-modal v-model="isDetailModalOpen" hide-default-actions max-width="700px">
+  <va-modal v-model="isDetailModalOpen" hide-default-actions max-width="700px" class="custom-modal">
     <template #header>
-      <h2 class="va-h4 items-center">
-        <va-icon name="event_note" class="mr-2" />
+      <h2 class="va-h4 d-flex align-center bg-gray-100 p-4 rounded-t-lg">
+        <va-icon name="event_note" class="mr-2 text-primary" />
         Chi Tiết Lịch Hẹn
       </h2>
     </template>
 
-    <div v-if="selectedAppointment" class="space-y-6 p-4">
+    <div v-if="selectedAppointment" class="space-y-6 p-6">
       <!-- Patient Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin bệnh nhân</h3>
-        <va-card-content class="bg-gray-50 rounded-lg p-4">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin bệnh nhân</h3>
+        <va-card-content class="bg-gray-50 rounded-lg p-5 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <strong class="text-gray-700">Họ tên:</strong>
-              {{ selectedAppointment.name || 'Chưa có' }}
+              <span class="ml-2">{{ selectedAppointment.name || 'Chưa có' }}</span>
             </div>
             <div>
               <strong class="text-gray-700">Lý do khám:</strong>
-              {{ selectedAppointment.reason }}
+              <span class="ml-2">{{ selectedAppointment.reason }}</span>
             </div>
           </div>
         </va-card-content>
       </section>
 
       <!-- Doctor Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin bác sĩ</h3>
-        <va-card-content class="bg-gray-50 rounded-lg p-4">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin bác sĩ</h3>
+        <va-card-content class="bg-gray-50 rounded-lg p-5 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <strong class="text-gray-700">Bác sĩ:</strong>
-              {{ selectedAppointment.staff.user?.name || 'Chưa phân công' }}
+              <span class="ml-2">{{
+                selectedAppointment.staff.user?.name || 'Chưa phân công'
+              }}</span>
             </div>
             <div>
               <strong class="text-gray-700">Ngày trực:</strong>
-              {{ formatDate(selectedAppointment.doctorShift.dayWork) }}
+              <span class="ml-2">{{ formatDate(selectedAppointment.doctorShift.dayWork) }}</span>
             </div>
           </div>
         </va-card-content>
       </section>
 
       <!-- Appointment Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin lịch hẹn</h3>
-        <va-card-content class="bg-gray-50 rounded-lg p-4">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin lịch hẹn</h3>
+        <va-card-content class="bg-gray-50 rounded-lg p-5 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <strong class="text-gray-700">Ngày giờ:</strong>
-              {{ formatDate(selectedAppointment.date) }} {{ formatTime(selectedAppointment.time) }}
+              <span class="ml-2">
+                {{ formatDate(selectedAppointment.date) }}
+                {{ formatTime(selectedAppointment.time) }}
+              </span>
             </div>
             <div class="flex items-center">
               <strong class="text-gray-700 mr-2">Trạng thái:</strong>
               <span
                 :class="{
-                  'text-green-600': getStatusText(selectedAppointment.status) === 'CONFIRMED',
-                  'text-blue-600': getStatusText(selectedAppointment.status) === 'COMPLETED',
-                  'text-red-600': getStatusText(selectedAppointment.status) === 'CANCELLED',
+                  'text-green-600 font-medium':
+                    getStatusText(selectedAppointment.status) === 'CONFIRMED',
+                  'text-blue-600 font-medium':
+                    getStatusText(selectedAppointment.status) === 'COMPLETED',
+                  'text-red-600 font-medium':
+                    getStatusText(selectedAppointment.status) === 'CANCELLED',
                 }"
               >
                 {{
@@ -184,78 +207,91 @@
 
       <!-- Close Button -->
       <div class="flex justify-end pt-4">
-        <va-button preset="primary" class="px-6" @click="isDetailModalOpen = false">
+        <va-button preset="secondary" class="px-6 action-button" @click="isDetailModalOpen = false">
           Đóng
         </va-button>
       </div>
     </div>
   </va-modal>
 
-  <va-modal v-model="isDetailModalPrescriptions" hide-default-actions max-width="800px">
+  <!-- MODAL HỒ SƠ CHẨN ĐOÁN -->
+  <va-modal
+    v-model="isDetailModalPrescriptions"
+    hide-default-actions
+    max-width="800px"
+    class="custom-modal"
+  >
     <template #header>
-      <h2 class="va-h4 items-center">
-        <va-icon name="event_note" class="mr-2" />
+      <h2 class="va-h4 d-flex align-center bg-gray-100 p-4 rounded-t-lg">
+        <va-icon name="event_note" class="mr-2 text-primary" />
         Hồ sơ chẩn đoán và kê đơn
       </h2>
     </template>
 
-    <div v-if="selectedAppointment" class="space-y-6 p-4">
+    <div v-if="selectedAppointment" class="space-y-6 p-6">
       <!-- Patient Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin bệnh nhân</h3>
-        <va-card-content class="bg-gray-50 rounded-lg p-4">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin bệnh nhân</h3>
+        <va-card-content class="bg-gray-50 rounded-lg p-5 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <strong class="text-gray-700">Họ tên:</strong>
-              {{ selectedAppointment.name || 'Chưa có' }}
+              <span class="ml-2">{{ selectedAppointment.name || 'Chưa có' }}</span>
             </div>
             <div>
               <strong class="text-gray-700">Lý do khám:</strong>
-              {{ selectedAppointment.reason }}
+              <span class="ml-2">{{ selectedAppointment.reason }}</span>
             </div>
           </div>
         </va-card-content>
       </section>
 
       <!-- Doctor Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin bác sĩ</h3>
-        <va-card-content class="bg-gray-50 rounded-lg p-4">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin bác sĩ</h3>
+        <va-card-content class="bg-gray-50 rounded-lg p-5 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <strong class="text-gray-700">Bác sĩ:</strong>
-              {{ selectedAppointment.staff.user?.name || 'Chưa phân công' }}
+              <span class="ml-2">{{
+                selectedAppointment.staff.user?.name || 'Chưa phân công'
+              }}</span>
             </div>
             <div>
               <strong class="text-gray-700">Ngày trực:</strong>
-              {{ formatDate(selectedAppointment.doctorShift.dayWork) }}
+              <span class="ml-2">{{ formatDate(selectedAppointment.doctorShift.dayWork) }}</span>
             </div>
           </div>
         </va-card-content>
       </section>
 
       <!-- Diagnosis Information -->
-      <section>
-        <h3 class="text-lg font-semibold mb-2">Thông tin chẩn đoán</h3>
-        <va-card-content v-if="selectedAppointment.medicalRecord" class="bg-gray-50 rounded-lg p-4">
-          <div class="space-y-3">
+      <section class="modal-section">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông tin chẩn đoán</h3>
+        <va-card-content
+          v-if="selectedAppointment.medicalRecord"
+          class="bg-gray-50 rounded-lg p-5 shadow-sm"
+        >
+          <div class="space-y-4">
             <p>
               <strong class="text-gray-700">Kết luận chẩn đoán:</strong>
-              {{ selectedAppointment.medicalRecord.diagnosis }}
+              <span class="ml-2">{{ selectedAppointment.medicalRecord.diagnosis }}</span>
             </p>
             <p>
               <strong class="text-gray-700">Hướng điều trị:</strong>
-              {{ selectedAppointment.medicalRecord.treatment }}
+              <span class="ml-2">{{ selectedAppointment.medicalRecord.treatment }}</span>
             </p>
             <p>
               <strong class="text-gray-700">Ghi chú:</strong>
-              {{ selectedAppointment.medicalRecord.notes || 'Không có ghi chú' }}
+              <span class="ml-2">{{
+                selectedAppointment.medicalRecord.notes || 'Không có ghi chú'
+              }}</span>
             </p>
 
             <!-- Prescription List -->
             <div class="mt-4">
-              <h4 class="text-md font-semibold">Đơn thuốc</h4>
-              <ul class="list-disc pl-5 mt-2">
+              <h4 class="text-md font-semibold text-gray-800">Đơn thuốc</h4>
+              <ul class="list-disc pl-5 mt-2 text-gray-600">
                 <li
                   v-for="(item, index) in selectedAppointment.medicalRecord.prescriptions"
                   :key="index"
@@ -269,14 +305,21 @@
 
           <!-- Close Button -->
           <div class="flex justify-end pt-4">
-            <va-button preset="primary" class="px-6" @click="isDetailModalPrescriptions = false">
+            <va-button
+              preset="secondary"
+              class="px-6 action-button"
+              @click="isDetailModalPrescriptions = false"
+            >
               Đóng
             </va-button>
           </div>
         </va-card-content>
 
         <!-- No Medical Record -->
-        <va-card-content v-else class="text-center text-gray-500 py-6 bg-gray-50 rounded-lg">
+        <va-card-content
+          v-else
+          class="text-center text-gray-500 py-6 bg-gray-50 rounded-lg shadow-sm"
+        >
           <va-icon name="medical_services" size="large" color="secondary" class="mb-3" />
           <p>Chưa có hồ sơ bệnh án cho lịch hẹn này.</p>
         </va-card-content>
@@ -285,21 +328,30 @@
   </va-modal>
 
   <!-- MODAL CHẨN ĐOÁN VÀ KÊ ĐƠN -->
-  <va-modal v-model="isAddDiagnosisModalOpen" hide-default-actions max-width="800px">
+  <va-modal
+    v-model="isAddDiagnosisModalOpen"
+    hide-default-actions
+    max-width="800px"
+    class="custom-modal"
+  >
     <template #header>
-      <h2 class="va-h4 items-center">
-        <va-icon name="edit_note" class="mr-2" />
+      <h2 class="va-h4 d-flex align-center bg-gray-100 p-4 rounded-t-lg">
+        <va-icon name="edit_note" class="mr-2 text-primary" />
         Tạo Hồ Sơ Bệnh Án & Kê Đơn
       </h2>
     </template>
 
-    <va-form ref="diagnosisFormRef" @submit.prevent="handleCreateMedicalRecord" class="space-y-6">
+    <va-form
+      ref="diagnosisFormRef"
+      @submit.prevent="handleCreateMedicalRecord"
+      class="space-y-6 p-6"
+    >
       <div v-if="selectedAppointment">
         <!-- Chẩn đoán -->
-        <div>
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">Chẩn đoán</h3>
-          <va-card>
-            <va-card-content>
+        <div class="modal-section">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Chẩn đoán</h3>
+          <va-card class="shadow-sm">
+            <va-card-content class="p-5">
               <p class="mb-4">
                 Chẩn đoán cho bệnh nhân:
                 <strong class="text-primary">{{ selectedAppointment.name || 'Chưa có' }}</strong>
@@ -310,31 +362,31 @@
                   label="Kết luận chẩn đoán"
                   :rules="[(v) => !!v || 'Chẩn đoán là bắt buộc']"
                   required-mark
+                  class="input-field"
                 />
                 <va-input
                   v-model="newMedicalRecord.treatment"
                   label="Hướng điều trị"
                   :rules="[(v) => !!v || 'Hướng điều trị là bắt buộc']"
                   required-mark
+                  class="input-field"
                 />
                 <va-textarea
                   v-model="newMedicalRecord.notes"
                   label="Ghi chú thêm (nếu có)"
                   :min-rows="3"
-                  class="sm:col-span-2"
+                  class="sm:col-span-2 input-field"
                 />
               </div>
             </va-card-content>
           </va-card>
         </div>
 
-        <!-- ======================= -->
-        <!-- PHẦN KÊ ĐƠN ĐƯỢC VIẾT LẠI -->
-        <!-- ======================= -->
-        <div>
-          <h3 class="text-lg font-semibold text-gray-700 mb-2">Đơn thuốc</h3>
-          <va-card>
-            <va-card-content>
+        <!-- PHẦN KÊ ĐƠN -->
+        <div class="modal-section">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Đơn thuốc</h3>
+          <va-card class="shadow-sm">
+            <va-card-content class="p-5">
               <!-- Danh sách thuốc đã thêm -->
               <div
                 v-if="newMedicalRecord.prescriptions.length === 0"
@@ -343,14 +395,14 @@
                 <va-icon name="vaccines" size="large" color="secondary" class="mb-2" />
                 <p>Chưa có thuốc nào trong đơn.</p>
               </div>
-              <div v-else class="space-y-2 mb-4">
+              <div v-else class="space-y-3 mb-4">
                 <div
                   v-for="(med, index) in newMedicalRecord.prescriptions"
                   :key="index"
-                  class="flex justify-between items-center border rounded-md px-3 py-2 bg-gray-50"
+                  class="flex justify-between items-center border rounded-md px-4 py-3 bg-gray-50 hover:bg-gray-100 transition"
                 >
                   <div>
-                    <div class="font-semibold">{{ med.medicationName }}</div>
+                    <div class="font-semibold text-gray-800">{{ med.medicationName }}</div>
                     <div class="text-sm text-gray-600">
                       SL: {{ med.quantity }} – {{ med.dosage }}
                     </div>
@@ -361,13 +413,14 @@
                     color="danger"
                     @click="removePrescriptionItem(index)"
                     size="small"
+                    class="action-button"
                   />
                 </div>
               </div>
 
               <!-- Form thêm thuốc mới -->
               <div class="border-t pt-4">
-                <h4 class="font-semibold mb-2">Thêm thuốc vào đơn</h4>
+                <h4 class="font-semibold text-gray-800 mb-3">Thêm thuốc vào đơn</h4>
                 <div class="space-y-4">
                   <va-select
                     v-model="selectedMedication"
@@ -379,11 +432,11 @@
                     clearable
                     no-options-text="Không tìm thấy thuốc"
                     @update:model-value="onMedicationSelect"
+                    class="input-field"
                   />
-                  <!-- Các input này chỉ hiện khi đã chọn thuốc -->
                   <div
                     v-if="newItemForm.medicationId"
-                    class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2"
                   >
                     <va-input
                       v-model.number="newItemForm.quantity"
@@ -391,12 +444,14 @@
                       type="number"
                       min="1"
                       :rules="[(v) => v > 0 || 'Số lượng phải lớn hơn 0']"
+                      class="input-field"
                     />
                     <va-input
                       v-model="newItemForm.dosage"
                       label="Liều dùng"
                       placeholder="VD: 2 viên/ngày, sau ăn"
                       :rules="[(v) => !!v.trim() || 'Liều dùng là bắt buộc']"
+                      class="input-field"
                     />
                   </div>
                   <va-button
@@ -404,7 +459,8 @@
                     @click="addPrescriptionItem"
                     :disabled="!newItemForm.quantity || !newItemForm.dosage"
                     icon="add"
-                    class="mt-2"
+                    class="mt-2 action-button"
+                    preset="primary"
                   >
                     Thêm vào đơn
                   </va-button>
@@ -416,16 +472,37 @@
 
         <!-- Nút hành động -->
         <div class="flex justify-end gap-3 pt-4">
-          <va-button preset="secondary" @click="closeAddDiagnosisModal">Hủy</va-button>
-          <va-button icon="save" type="submit">Lưu Hồ Sơ Bệnh Án</va-button>
+          <va-button preset="secondary" @click="closeAddDiagnosisModal" class="action-button">
+            Hủy
+          </va-button>
+          <va-button icon="save" type="submit" class="action-button">Lưu Hồ Sơ Bệnh Án</va-button>
+          <!-- <va-button
+            icon="download"
+            @click="generatePDF(selectedAppointment)"
+            class="action-button"
+            preset="secondary"
+          >
+            Xuất PDF
+          </va-button> -->
         </div>
       </div>
     </va-form>
   </va-modal>
+
+  <!-- Trong <template> -->
+  <div v-if="pdfRenderData" style="position: absolute; left: -9999px; top: -9999px; z-index: -1">
+    <div ref="pdfTemplateRef">
+      <export-pdf-prescription
+        :appointment="pdfRenderData.appointment"
+        :medicalRecord="pdfRenderData.medicalRecord"
+      />
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, type App } from 'vue'
+import html2pdf from 'html2pdf.js'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { toast } from 'vue3-toastify'
 import type { Appointment } from '@/interfaces/appointment.interfaces'
 import type { RequestMedicalRecord, PrescriptionItem } from '@/interfaces/medicalRecord.interfaces'
@@ -433,26 +510,17 @@ import { useAppointmentStore } from '@/stores/appointment.store'
 import { useMedicineStore } from '@/stores/medicine.store'
 import type { Medicine } from '@/interfaces/medicine.interface'
 import { useMedicalRecordStore } from '@/stores/medicalRecord.store'
+import ExportPdfPrescription from '@/components/medicine/ExportPdfPrescription.vue'
 
 // === STATE MANAGEMENT ===
 const appointments = ref<Appointment[]>([])
-const searchQuery = ref('')
-const filterStatus = ref('1')
+const filterDate = ref<string>('') // State cho lọc theo ngày
+const activeTab = ref('confirmed') // Tab mặc định là "Đã xác nhận"
 const selectedAppointment = ref<Appointment | null>(null)
 const isDetailModalOpen = ref(false)
 const isAddDiagnosisModalOpen = ref(false)
 const isDetailModalPrescriptions = ref(false)
 const diagnosisFormRef = ref<Form | null>(null)
-
-const onOpenModalPrescriptions = (appointment: Appointment) => {
-  isDetailModalPrescriptions.value = true
-  selectedAppointment.value = appointment
-}
-
-const openDetailModal = (appointment: Appointment) => {
-  selectedAppointment.value = appointment
-  isDetailModalOpen.value = true
-}
 
 // --- State cho Modal Chẩn Đoán ---
 const newMedicalRecord = ref<RequestMedicalRecord>({
@@ -463,8 +531,7 @@ const newMedicalRecord = ref<RequestMedicalRecord>({
   prescriptions: [],
 })
 
-// === LOGIC KÊ ĐƠN ĐÃ CẤU TRÚC LẠI ===
-// Hàm helper để tạo object rỗng cho form thêm thuốc
+// === LOGIC KÊ ĐƠN ===
 const createInitialNewItemForm = (): Partial<PrescriptionItem> => ({
   medicationId: undefined,
   medicationName: undefined,
@@ -482,12 +549,6 @@ const medicalRecordStore = useMedicalRecordStore()
 const medicineStore = useMedicineStore()
 
 // === UI CONFIG ===
-const optionsStatus = ref([
-  // { text: 'Chưa thanh toán', value: '0' },
-  { text: 'Đã xác nhận', value: '1' },
-  { text: 'Hoàn thành', value: '3' },
-  { text: 'Đã hủy', value: '2' },
-])
 const columns = ref([
   { key: 'patient', label: 'Bệnh nhân', sortable: true },
   { key: 'appointmentDateTime', label: 'Thời gian hẹn', sortable: true },
@@ -497,16 +558,33 @@ const columns = ref([
 ])
 
 // === COMPUTED PROPERTIES ===
+const filterStatus = computed(() => {
+  switch (activeTab.value) {
+    case 'confirmed':
+      return '1'
+    case 'completed':
+      return '3'
+    case 'cancelled':
+      return '2'
+    default:
+      return '1'
+  }
+})
+
 const filteredAppointments = computed(() => {
-  if (!searchQuery.value) return appointments.value
-  const query = searchQuery.value.toLowerCase()
-  return appointments.value.filter(
-    (apt) =>
-      (apt.name && apt.name.toLowerCase().includes(query)) || apt.id.toLowerCase().includes(query),
-  )
+  if (!filterDate.value) return appointments.value
+  return appointments.value.filter((apt) => {
+    const appointmentDate = apt.date ? new Date(apt.date).toISOString().split('T')[0] : ''
+    return appointmentDate === filterDate.value
+  })
 })
 
 // === METHODS ===
+const isValidDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
 const fetchAppointments = async () => {
   try {
     await appointmentStore.fetchAppointmentsByDoctor(0, 100, filterStatus.value)
@@ -526,6 +604,16 @@ const fetchMedications = async () => {
 }
 
 // --- Modal handlers ---
+const openDetailModal = (appointment: Appointment) => {
+  selectedAppointment.value = appointment
+  isDetailModalOpen.value = true
+}
+
+const onOpenModalPrescriptions = (appointment: Appointment) => {
+  isDetailModalPrescriptions.value = true
+  selectedAppointment.value = appointment
+}
+
 const openAddDiagnosisModal = (appointment: Appointment) => {
   selectedAppointment.value = appointment
   newMedicalRecord.value = {
@@ -535,7 +623,6 @@ const openAddDiagnosisModal = (appointment: Appointment) => {
     notes: '',
     prescriptions: [],
   }
-  // Reset form thêm thuốc về trạng thái ban đầu
   newItemForm.value = createInitialNewItemForm()
   selectedMedication.value = null
   isAddDiagnosisModalOpen.value = true
@@ -547,10 +634,9 @@ const closeAddDiagnosisModal = () => {
   diagnosisFormRef.value?.reset()
 }
 
-// --- Prescription handlers (Đã viết lại) ---
+// --- Prescription handlers ---
 const onMedicationSelect = (medication: Medicine | null) => {
   if (medication) {
-    // Khi chọn thuốc, cập nhật form thêm thuốc
     newItemForm.value = {
       medicationId: medication.id,
       medicationName: medication.name,
@@ -558,32 +644,23 @@ const onMedicationSelect = (medication: Medicine | null) => {
       dosage: '',
     }
   } else {
-    // Khi xóa lựa chọn, reset form
     newItemForm.value = createInitialNewItemForm()
   }
 }
 
 const addPrescriptionItem = () => {
-  // Đảm bảo các trường cần thiết đã được điền
   if (!newItemForm.value.quantity || !newItemForm.value.dosage?.trim()) {
     toast.warning('Vui lòng điền đủ số lượng và liều dùng.')
     return
   }
 
-  // Thêm thuốc vào đơn chính
   newMedicalRecord.value.prescriptions.push(newItemForm.value as PrescriptionItem)
-
-  // Reset form để chuẩn bị thêm thuốc tiếp theo
   newItemForm.value = createInitialNewItemForm()
-  selectedMedication.value = null // Xóa lựa chọn trong va-select
+  selectedMedication.value = null
 }
 
 const removePrescriptionItem = (index: number) => {
   newMedicalRecord.value.prescriptions.splice(index, 1)
-}
-
-const viewMedicalRecord = (appointmentId: string) => {
-  toast.info(`Sẽ mở chi tiết hồ sơ cho lịch hẹn ${appointmentId}`)
 }
 
 // --- Form submission ---
@@ -599,7 +676,7 @@ const handleCreateMedicalRecord = async () => {
     await medicalRecordStore.addMedicalRecord(newMedicalRecord.value)
     toast.success('Tạo hồ sơ bệnh án thành công!')
     closeAddDiagnosisModal()
-    filterStatus.value = 'COMPLETED'
+    activeTab.value = 'completed' // Chuyển sang tab "Hoàn thành" sau khi lưu
     await fetchAppointments()
   } catch (error: any) {
     toast.error(error.message || 'Tạo hồ sơ thất bại.')
@@ -610,20 +687,82 @@ const handleCreateMedicalRecord = async () => {
 const formatDate = (date: string | undefined) =>
   date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A'
 const formatTime = (time: string | undefined) => (time ? time.substring(0, 5) : 'N/A')
-const getStatusText = (status: string) =>
-  optionsStatus.value.find((o) => o.value === status)?.text || status
+const getStatusText = (status: string) => {
+  switch (status) {
+    case '1':
+      return 'CONFIRMED'
+    case '3':
+      return 'COMPLETED'
+    case '2':
+      return 'CANCELLED'
+    default:
+      return status
+  }
+}
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'CONFIRMED':
+    case '1':
       return 'primary'
     case 'COMPLETED':
+    case '3':
       return 'success'
     case 'CANCELLED':
+    case '2':
       return 'danger'
-    case 'PENDING_PAYMENT':
-      return 'warning'
     default:
       return 'secondary'
+  }
+}
+
+// --- PDF Generation ---
+const pdfTemplateRef = ref<HTMLElement | null>(null)
+const pdfRenderData = ref<{ appointment: Appointment; medicalRecord: any } | null>(null)
+
+const generatePDF = async (appointmentData: Appointment) => {
+  let medicalRecordData = null
+
+  if (isAddDiagnosisModalOpen.value && selectedAppointment.value?.id === appointmentData.id) {
+    medicalRecordData = newMedicalRecord.value
+  } else if (appointmentData.medicalRecord) {
+    medicalRecordData = appointmentData.medicalRecord
+  }
+
+  if (!appointmentData || !medicalRecordData) {
+    toast.error('Không có đủ dữ liệu bệnh án để xuất file PDF.')
+    return
+  }
+
+  pdfRenderData.value = {
+    appointment: appointmentData,
+    medicalRecord: medicalRecordData,
+  }
+
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 100))
+
+  const element = pdfTemplateRef.value
+  if (!element) {
+    toast.error('Lỗi: Không tìm thấy mẫu PDF để render.')
+    pdfRenderData.value = null
+    return
+  }
+
+  const opt = {
+    margin: 5,
+    filename: `DonThuoc_${appointmentData.name.replace(/\s/g, '')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }
+
+  try {
+    await html2pdf().from(element).set(opt).save()
+  } catch (err) {
+    toast.error('Đã có lỗi xảy ra khi tạo file PDF.')
+    console.error('html2pdf error:', err)
+  } finally {
+    pdfRenderData.value = null
   }
 }
 
@@ -638,138 +777,153 @@ onMounted(async () => {
 .selected-container {
   justify-content: space-between;
   gap: 1rem;
+  align-items: flex-start;
 }
-.status-filter {
-  width: 220px;
+
+.status-tabs {
+  max-width: 600px;
+  :deep(.va-tabs__tabs) {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  :deep(.va-tab) {
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    &.va-tab--active {
+      background-color: var(--va-primary);
+      color: white;
+    }
+  }
 }
-.search-input {
+
+.date-input {
   flex-grow: 1;
-  max-width: 400px;
+  max-width: 200px;
+  :deep(.va-input-wrapper) {
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
 }
 
 .custom-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  :deep(.va-data-table__table) {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
   :deep(.va-data-table__table-thead) {
-    background-color: #ecf0f1 !important; /* Màu header */
-    font-weight: bold;
+    background-color: #f1f5f9 !important;
+    th {
+      font-weight: 600;
+      color: #1e293b;
+      padding: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
   }
-
   :deep(.va-data-table__table-row) {
-    transition: background-color 0.3s ease;
+    transition: background-color 0.2s ease;
+    &:nth-child(even) {
+      background-color: #f8fafc;
+    }
     &:hover {
-      background-color: #f5f7fa !important; /* Màu khi hover */
+      background-color: #e5e7eb !important;
     }
-  }
-
-  .staff-name {
-    font-size: 14px;
-    color: #2c3e50;
-  }
-
-  .status-text {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 500;
-    font-size: 12px;
-    text-transform: capitalize;
-
-    &.pending {
-      background-color: #ffeb3b; /* Vàng nhạt - Chờ xác nhận */
-      color: #333;
-    }
-
-    &.approved {
-      background-color: #4caf50; /* Xanh lá - Đã xác nhận */
-      color: white;
-    }
-
-    &.in_progress {
-      background-color: #2196f3; /* Xanh dương - Đang diễn ra */
-      color: white;
-    }
-
-    &.canceled {
-      background-color: #f44336; /* Đỏ - Đã hủy */
-      color: white;
-    }
-
-    &.completed {
-      background-color: #9e9e9e; /* Xám - Đã hoàn thành */
-      color: white;
-    }
-  }
-
-  .status-select {
-    :deep(.va-input-wrapper__fieldset) {
-      width: 150px;
-      border-color: #ccc;
-
-      &:hover {
-        border-color: #888;
-      }
-    }
-
-    :deep(.va-select-option) {
-      padding: 5px 10px;
-      &:hover {
-        background-color: #f5f7fa;
-      }
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
     }
   }
 }
-.font-weight-bold {
+
+.action-button {
+  :deep(.va-button) {
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.custom-modal {
+  :deep(.va-modal__inner) {
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+  }
+  :deep(.va-modal__content) {
+    padding: 0;
+  }
+}
+
+.modal-section {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 1rem;
+  &:not(:last-child) {
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+.input-field {
+  :deep(.va-input-wrapper) {
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    &:hover {
+      border-color: var(--va-primary);
+    }
+  }
+  :deep(.va-input-wrapper__label) {
+    font-weight: 500;
+    color: #1e293b;
+  }
+}
+
+.font-semibold {
   font-weight: 600;
 }
-.va-text-secondary {
-  color: var(--va-secondary);
+
+.text-gray-500 {
+  color: #6b7280;
 }
 
-/* Modal Chẩn đoán */
-.diagnosis-content {
-  padding: 0 1rem 1rem 1rem;
+.text-gray-600 {
+  color: #4b5563;
 }
-.form-section {
-  background-color: var(--va-background-tertiary);
-  border-radius: 8px;
-  padding: 1.5rem !important;
-  height: 100%;
+
+.text-gray-700 {
+  color: #374151;
 }
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 150px;
-  color: var(--va-secondary);
+
+.text-gray-800 {
+  color: #1e293b;
 }
+
 .prescription-list {
-  max-height: 250px;
+  max-height: 200px;
   overflow-y: auto;
   padding-right: 8px;
 }
+
 .prescription-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid var(--va-background-border);
+  border-bottom: 1px solid #e2e8f0;
   &:last-child {
     border-bottom: none;
   }
 }
-.med-info {
-  display: flex;
-  flex-direction: column;
-  strong {
-    font-size: 0.9rem;
-  }
-  small {
-    color: var(--va-secondary);
-    font-size: 0.8rem;
-  }
-}
+
 .add-med-form {
-  border-top: 1px solid var(--va-background-border);
+  border-top: 1px solid #e2e8f0;
   padding-top: 1rem;
   margin-top: 1rem;
 }

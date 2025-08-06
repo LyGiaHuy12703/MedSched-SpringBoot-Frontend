@@ -69,7 +69,7 @@
             />
             <div class="user-info">
               <span class="user-name">{{ userApi.user.name || 'User' }}</span>
-              <span class="user-role">{{ userApi.user.role || 'Bệnh nhân' }}</span>
+              <span class="user-role">{{ userApi.user.role[0]?.name || 'Bệnh nhân' }}</span>
             </div>
             <VaIcon
               name="keyboard_arrow_down"
@@ -227,6 +227,7 @@ const userApi = ref<Account>({
     name: '',
     email: '',
     role: '',
+    userType: '',
     avatarUrl: '',
     phone: '',
     address: '',
@@ -269,9 +270,7 @@ onMounted(async () => {
   const data = await authStore.getInfo()
   if (data) {
     userApi.value = data
-  } else {
-    console.error('Failed to fetch user info')
-  }
+  } 
 })
 </script>
 
@@ -428,7 +427,7 @@ onMounted(async () => {
 
           .user-name {
             font-weight: 600;
-            color: var(--va-text-primary);
+            color: black;
             font-size: 0.9rem;
             line-height: 1.2;
           }
@@ -441,7 +440,7 @@ onMounted(async () => {
         }
 
         .dropdown-arrow {
-          color: var(--va-text-secondary);
+          color: black;
           transition: transform 0.3s ease;
           font-size: 1.2rem;
 
@@ -469,7 +468,6 @@ onMounted(async () => {
           gap: 1rem;
           padding: 1.5rem;
           background: linear-gradient(135deg, var(--va-primary), rgba(var(--va-primary-rgb), 0.8));
-          color: white;
 
           .user-details {
             .user-name {

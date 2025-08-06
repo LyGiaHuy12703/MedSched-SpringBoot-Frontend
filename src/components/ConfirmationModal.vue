@@ -4,7 +4,6 @@
       v-model="localShowModal"
       size="medium"
       hide-default-actions
-      @close="$emit('cancel')"
       class="confirmation-modal"
     >
       <template #header>
@@ -33,12 +32,7 @@
             </div>
             <div class="info-item">
               <span class="label">Giới tính</span>
-              <span class="value">
-                {{
-                  genderOptions.find((g) => g.value === patientForm.gender)?.text ||
-                  'Không xác định'
-                }}
-              </span>
+              <span class="value">{{ genderText }}</span>
             </div>
             <div class="info-item">
               <span class="label">Ngày sinh</span>
@@ -107,14 +101,12 @@
         <div class="info-section">
           <div class="section-header">
             <va-icon name="medication" color="primary" />
-            <h3 class="section-title">Dịch vụ khám</h3>
+            <h3 class="section-title">Dịch vụ đã chọn</h3>
           </div>
           <div class="services-list">
-            <div v-for="serviceId in selectedServiceIds" :key="serviceId" class="service-item">
-              <span class="service-name">{{ services.find((s) => s.id === serviceId)?.name }}</span>
-              <span class="service-cost">
-                {{ formatPrice(services.find((s) => s.id === serviceId)?.price || 0) }} VND
-              </span>
+            <div v-for="service in services" :key="service.id" class="service-item">
+              <span class="service-name">{{ service.name }}</span>
+              <span class="service-cost"> {{ formatPrice(service.price) }} VND </span>
             </div>
           </div>
         </div>
@@ -134,28 +126,27 @@
         <div class="total-section">
           <div class="total-card">
             <span class="total-label">Tổng chi phí</span>
-            <span class="total-amount">
-              {{
-                formatPrice(
-                  selectedServiceIds.reduce(
-                    (sum, id) => sum + (services.find((s) => s.id === id)?.price || 0),
-                    0,
-                  ),
-                )
-              }}
-              VND
-            </span>
+            <span class="total-amount"> {{ formatPrice(totalCost) }} VND </span>
           </div>
         </div>
       </div>
 
       <template #footer>
         <div class="modal-actions">
-          <va-button preset="secondary" @click="$emit('cancel')" class="action-btn cancel-btn">
+          <va-button
+            preset="secondary"
+            @click="emit('update:modelValue', false)"
+            class="action-btn cancel-btn"
+          >
             Hủy bỏ
           </va-button>
-          <va-button preset="primary" @click="$emit('confirm')" class="action-btn confirm-btn">
-            Xác nhận
+          <va-button
+            preset="primary"
+            @click="emit('confirm')"
+            class="action-btn confirm-btn"
+            :loading="loading"
+          >
+            Xác nhận & Đặt lịch
           </va-button>
         </div>
       </template>
@@ -164,100 +155,113 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { Staff } from '@/interfaces/staff.interface'
+import type { Service } from '@/interfaces/service.interfaces'
+import type { AppointmentRequest } from '@/interfaces/appointment.interfaces'
 
-// Define props using defineProps with TypeScript
+// --- Props ---
 const props = defineProps<{
-  showModal: boolean
-  patientForm: {
-    name: string
-    gender: string
-    dob: string
-    phoneReceiveInfo: string
-    emailReceiveInfo: string
-    reason: string
-  }
-  genderOptions: { value: string; text: string }[]
-  selectedDoctor: string
+  modelValue: boolean
+  patientForm: AppointmentRequest
   selectedDoctorInfo: Staff | null
   selectedDate: string
   selectedTime: string
-  selectedServiceIds: string[]
-  services: { id: string; name: string; price: number }[]
-  staffs: Staff[]
-  formatDate: (dateStr: string) => string
-  formatPrice: (price: number) => string
+  services: Service[]
   loading: boolean
 }>()
-const emit = defineEmits(['confirm', 'cancel'])
 
-// Local ref for modal visibility
-const localShowModal = ref(props.showModal)
+const emit = defineEmits(['update:modelValue', 'confirm'])
 
-// Watch for prop changes to update local ref
+// --- Local State ---
+const localShowModal = ref(props.modelValue)
+
+// --- Watchers to sync v-model ---
 watch(
-  () => props.showModal,
+  () => props.modelValue,
   (val) => {
     localShowModal.value = val
   },
 )
 
-// Watch for local changes to emit cancel when closed
 watch(localShowModal, (val) => {
-  if (!val && props.showModal) {
-    emit('cancel')
+  if (!val && props.modelValue) {
+    emit('update:modelValue', false)
   }
+})
+
+// --- Helper Functions & Computed Properties ---
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'N/A'
+  return new Date(dateStr).toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+const formatPrice = (price: number) => {
+  if (price == null) return '0'
+  return new Intl.NumberFormat('vi-VN').format(price)
+}
+
+const totalCost = computed(() => {
+  if (!props.services) return 0
+  return props.services.reduce((sum, service) => sum + service.price, 0)
+})
+
+const genderText = computed(() => {
+  if (!props.patientForm) {
+    return 'Không xác định'
+  }
+  const options = [
+    { value: 'MALE', text: 'Nam' },
+    { value: 'FEMALE', text: 'Nữ' },
+    { value: 'OTHER', text: 'Khác' },
+  ]
+  return options.find((g) => g.value === props.patientForm.gender)?.text || 'Không xác định'
 })
 </script>
 
 <style lang="scss" scoped>
 .confirmation-modal {
-  $success-color: #10b981;
   --modal-bg: #ffffff;
-  --primary-color: #4a90e2;
+  --primary-color: #154ec1; // Using a consistent primary color
   --secondary-color: #6b7280;
   --success-color: #10b981;
-  --warning-color: #f59e0b;
   --border-color: #e5e7eb;
 
   .modal-header {
     display: flex;
     align-items: center;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    background: #f9fafb; // Lighter background
     border-bottom: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0;
 
     .header-icon {
       width: 48px;
       height: 48px;
-      background: #10b981;
+      background: var(--primary-color);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
-
-      .va-icon {
-        color: white;
-      }
+      color: white;
     }
 
     .header-content {
       margin-left: 1rem;
-
       .modal-title {
         font-size: 1.5rem;
         font-weight: 600;
-        color: var(--primary-color);
+        color: #1f2937;
         margin: 0;
       }
-
       .modal-subtitle {
         font-size: 0.9rem;
         color: var(--secondary-color);
-        margin: 0.25rem 0 0;
+        margin-top: 0.25rem;
       }
     }
   }
@@ -266,28 +270,24 @@ watch(localShowModal, (val) => {
     padding: 1.5rem;
     max-height: 70vh;
     overflow-y: auto;
-    background: var(--modal-bg);
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 
     .info-section {
-      margin-bottom: 1.5rem;
+      background: var(--modal-bg);
       border-radius: 8px;
-      background: #fff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       border: 1px solid var(--border-color);
-
-      &:last-child {
-        margin-bottom: 0;
-      }
 
       .section-header {
         display: flex;
         align-items: center;
         padding: 0.75rem 1rem;
         border-bottom: 1px solid var(--border-color);
-
         .section-title {
           font-size: 1.1rem;
-          font-weight: 500;
+          font-weight: 600;
           color: var(--primary-color);
           margin: 0 0 0 0.5rem;
         }
@@ -296,30 +296,26 @@ watch(localShowModal, (val) => {
       .info-grid,
       .appointment-details {
         display: grid;
-        gap: 0.75rem;
+        gap: 1rem;
         padding: 1rem;
       }
 
       .info-grid {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       }
 
       .info-item,
       .detail-item {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
-
         .label {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           color: var(--secondary-color);
-          font-weight: 500;
         }
-
         .value {
           font-size: 1rem;
-          color: #1f2937;
           font-weight: 500;
+          color: #1f2937;
         }
       }
 
@@ -328,39 +324,30 @@ watch(localShowModal, (val) => {
         align-items: center;
         padding: 1rem;
         gap: 1rem;
-
-        .avatar-container {
-          .doctor-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          }
+        .doctor-avatar {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid var(--primary-color);
         }
-
         .doctor-details {
           .doctor-name {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #1f2937;
             margin: 0 0 0.25rem;
           }
-
           .doctor-specialty {
             font-size: 0.9rem;
             color: var(--primary-color);
             margin: 0 0 0.5rem;
           }
-
           .doctor-stats {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             font-size: 0.85rem;
             color: var(--secondary-color);
-
             .rating,
             .experience {
               display: flex;
@@ -376,71 +363,50 @@ watch(localShowModal, (val) => {
       }
 
       .services-list {
-        padding: 1rem;
-
+        padding: 0.5rem 1rem 1rem;
         .service-item {
           display: flex;
           justify-content: space-between;
-          padding: 0.75rem;
-          margin-bottom: 0.5rem;
-          background: #f9fafb;
-          border-radius: 6px;
-          border: 1px solid var(--border-color);
-
+          padding: 0.75rem 0;
+          border-bottom: 1px dashed var(--border-color);
           &:last-child {
-            margin-bottom: 0;
+            border-bottom: none;
           }
-
           .service-name {
-            font-size: 0.95rem;
-            color: #1f2937;
             font-weight: 500;
           }
-
           .service-cost {
-            font-size: 0.95rem;
-            color: #10b981;
             font-weight: 600;
+            color: var(--success-color);
           }
         }
       }
 
       .reason-box {
         padding: 1rem;
-        background: #f9fafb;
-        border-radius: 6px;
-        border-left: 4px solid var(--primary-color);
-
         .reason-text {
-          font-size: 0.95rem;
-          color: #1f2937;
-          line-height: 1.5;
           margin: 0;
+          line-height: 1.6;
         }
       }
     }
 
     .total-section {
-      margin-top: 1.5rem;
-
       .total-card {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem;
-        background: #10b981;
+        padding: 1rem 1.5rem;
+        background: var(--success-color);
         border-radius: 8px;
         color: white;
-        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
-
         .total-label {
           font-size: 1.1rem;
           font-weight: 500;
         }
-
         .total-amount {
           font-size: 1.3rem;
-          font-weight: 600;
+          font-weight: 700;
         }
       }
     }
@@ -450,122 +416,13 @@ watch(localShowModal, (val) => {
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-    padding: 1rem;
-    background: var(--modal-bg);
+    padding: 1rem 1.5rem;
+    background: #f9fafb;
     border-top: 1px solid var(--border-color);
-    border-radius: 0 0 8px 8px;
 
     .action-btn {
-      padding: 0.75rem 1.5rem;
       font-weight: 500;
       border-radius: 6px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-    }
-
-    .cancel-btn {
-      background-color: #f3f4f6;
-      color: #374151;
-
-      &:hover {
-        background-color: #e5e7eb;
-      }
-    }
-
-    .confirm-btn {
-      background: #10b981;
-      color: white;
-
-      &:hover {
-        background: darken(#10b981, 5%);
-        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
-      }
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .confirmation-modal {
-    .modal-header {
-      flex-direction: column;
-      text-align: center;
-      padding: 1rem;
-
-      .header-icon {
-        width: 40px;
-        height: 40px;
-      }
-
-      .header-content {
-        margin-left: 0;
-
-        .modal-title {
-          font-size: 1.3rem;
-        }
-
-        .modal-subtitle {
-          font-size: 0.85rem;
-        }
-      }
-    }
-
-    .confirmation-content {
-      padding: 1rem;
-
-      .info-section {
-        .info-grid,
-        .appointment-details {
-          grid-template-columns: 1fr;
-        }
-
-        .doctor-card {
-          flex-direction: column;
-          text-align: center;
-
-          .avatar-container {
-            margin-bottom: 0.5rem;
-          }
-        }
-      }
-
-      .total-section .total-card {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-      }
-    }
-
-    .modal-actions {
-      flex-direction: column;
-      gap: 0.5rem;
-
-      .action-btn {
-        width: 100%;
-      }
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .confirmation-modal {
-    .confirmation-content {
-      .info-section {
-        .section-header .section-title {
-          font-size: 1rem;
-        }
-
-        .doctor-card .doctor-name {
-          font-size: 1rem;
-        }
-      }
-
-      .total-section .total-card .total-amount {
-        font-size: 1.1rem;
-      }
     }
   }
 }

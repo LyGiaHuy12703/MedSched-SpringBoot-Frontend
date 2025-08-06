@@ -1,4 +1,8 @@
-import type { DoctorShift, DoctorShiftCreateRequest } from '@/interfaces/doctorShift.interfaces'
+import type {
+  DoctorShift,
+  DoctorShiftCreateRequest,
+  StaffDoctorShift,
+} from '@/interfaces/doctorShift.interfaces'
 import type { APIResponse, ClientResponse } from '@/interfaces/response.interface'
 import apiClient from '@/utils/httpClient'
 
@@ -48,6 +52,44 @@ const scheduleService = {
     request: string,
   ): Promise<ClientResponse<APIResponse<DoctorShift>>> {
     return apiClient.patch(`schedules/${id}/status`, request)
+  },
+  async fetchAssignments(
+    page: number,
+    size: number,
+    pivotStatus?: string,
+  ): Promise<ClientResponse<APIResponse<StaffDoctorShift[]>>> {
+    const params: Record<string, any> = {
+      page,
+      size,
+      sort: 'doctorShift.dayWork,desc', // Sắp xếp mặc định
+    }
+    if (pivotStatus) {
+      params.pivotStatus = pivotStatus
+    }
+    // Gọi đến API /api/v1/assignments
+    return apiClient.get('assignments', { params })
+  },
+
+  /**
+   * Cập nhật trạng thái của một phân công cụ thể.
+   * @param assignmentId - ID của bản ghi staff_doctor_shift
+   * @param newStatus - Trạng thái mới ('APPROVED' hoặc 'CANCELED')
+   */
+  async updateAssignmentStatus(
+    assignmentId: string,
+    newStatus: 'APPROVED' | 'CANCELED',
+  ): Promise<ClientResponse<APIResponse<StaffDoctorShift>>> {
+    // Gọi đến API /api/v1/assignments/{id}/status
+    return apiClient.patch(`assignments/${assignmentId}/status`, { status: newStatus })
+  },
+  async fetchAssignmentsByStaffId(
+    staffId: string,
+    page: number = 0,
+    size: number = 100, // Mặc định lấy nhiều
+  ): Promise<ClientResponse<APIResponse<StaffDoctorShift[]>>> {
+    const params = { page, size, sort: 'doctorShift.dayWork,asc' }
+    // Gọi đến API mới: /api/v1/assignments/staff/{staffId}
+    return apiClient.get(`assignments/staff/${staffId}`, { params })
   },
 }
 export default scheduleService

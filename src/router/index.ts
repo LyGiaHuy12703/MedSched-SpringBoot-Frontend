@@ -45,7 +45,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Kiểm tra các route bắt đầu bằng /staff
   if (to.path.startsWith('/staff')) {
-    if (userRole === 'STAFF') {
+    if (userRole === 'DOCTOR' || userRole === 'PHARMACIST' || userRole === 'SUPPORTER') {
       return next() // Cho phép STAFF truy cập
     }
     modalStore.showModal('Vui lòng đăng nhập với vai trò STAFF để truy cập!')
@@ -59,7 +59,7 @@ router.beforeEach(async (to, from, next) => {
       if (isAuthenticated) {
         if (userRole === 'ADMIN') {
           return next({ name: 'AdminDashboard' }) // Chuyển hướng đến AdminDashboard
-        } else if (userRole === 'STAFF') {
+        } else if (userRole === 'DOCTOR' || userRole === 'PHARMACIST' || userRole === 'SUPPORTER') {
           return next({ name: 'StaffDashboard' }) // Chuyển hướng đến StaffDashboard
         } else {
           modalStore.showModal('Vai trò của bạn không được phép truy cập trang này!')

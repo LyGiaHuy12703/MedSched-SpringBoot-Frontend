@@ -1,156 +1,205 @@
+```vue
 <template>
   <div class="add-medicine">
-    <va-card stripe stripe-color="primary">
-      <va-card-title class="header">
-        <va-icon name="local_pharmacy" color="primary" class="mr-2"></va-icon>
-        <h1 class="va-h4">Chỉnh sửa liệu thuốc</h1>
-      </va-card-title>
-      <va-card-content v-if="medicineData">
-        <va-form ref="formRef" class="form-group" @submit.prevent="onSubmit">
-          <!-- Basic Information -->
+    <va-card class="medicine-card">
+      <va-card-content>
+        <va-card-title class="header">
+          <va-icon name="local_pharmacy" color="primary" class="mr-1"></va-icon>
+          <h1 class="va-h4 title-text">Chỉnh sửa dữ liệu thuốc</h1>
+        </va-card-title>
+        <va-form ref="formRef" @submit.prevent="onSubmit" v-if="medicineData">
           <div class="section-title">Thông tin cơ bản</div>
           <div class="add-grid">
             <div class="add-item">
               <div class="label">
-                <va-icon name="tag" size="small" class="mr-1"></va-icon> Tên thuốc
+                <va-icon name="tag" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Tên thuốc</span>
               </div>
               <va-input
                 v-model="medicineData.name"
-                placeholder="Nhập tên thuốc"
-                :rules="[(v) => !!v || 'Tên thuốc là bắt buộc']"
+                placeholder="Nhập tên"
+                :rules="[(v) => !!v || 'Bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
             <div class="add-item">
               <div class="label">
-                <va-icon name="attach_money" size="small" class="mr-1"></va-icon> Giá
+                <va-icon name="attach_money" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Giá</span>
               </div>
               <va-input
                 v-model.number="medicineData.price"
                 type="number"
-                placeholder="Nhập giá thuốc"
-                :rules="[(v) => !!v || 'Giá là bắt buộc']"
+                placeholder="Nhập giá"
+                :rules="[(v) => !!v || 'Bắt buộc']"
                 required-mark
+                class="input-field"
+                dense
               />
             </div>
           </div>
-
-          <!-- Usage Details -->
-          <div class="section-title mt-4">Chi tiết sử dụng</div>
-          <div class="add-grid mb-3">
-            <div class="add-item">
-              <div class="label">
-                <va-icon name="category" size="small" class="mr-1"></va-icon> Dạng bào chế
-              </div>
-              <va-input
-                v-model="medicineData.formulation"
-                placeholder="Nhập dạng bào chế"
-                :rules="[(v) => !!v || 'Nhập dạng bào chế là bắt buộc']"
-              />
-            </div>
-            <div class="add-item">
-              <div class="label">
-                <va-icon name="group_work" size="small" class="mr-1"></va-icon> Nhóm điều trị
-              </div>
-              <va-input
-                v-model="medicineData.therapeuticGroup"
-                placeholder="Nhập nhóm điều trị"
-                :rules="[(v) => !!v || 'Nhập nhóm điều trị là bắt buộc']"
-              />
-            </div>
-          </div>
-          <div class="add-grid mb-3">
-            <div class="add-item">
-              <div class="label">
-                <va-icon name="description" size="small" class="mr-1"></va-icon> Mô tả
-              </div>
-              <va-textarea
-                v-model="medicineData.description"
-                placeholder="Nhập mô tả thuốc"
-                :rules="[(v) => !!v || 'Mô tả là bắt buộc']"
-                required-mark
-              />
-            </div>
-          </div>
-          <div class="add-item mb-3">
-            <div class="label">
-              <va-icon name="healing" size="small" class="mr-1"></va-icon> Liều lượng và cách dùng
-            </div>
-            <va-textarea
-              v-model="medicineData.dosage"
-              placeholder="Nhập liều lượng và cách dùng"
-              :rules="[(v) => !!v || 'Nhập liều lượng và cách dùng là bắt buộc']"
-            />
-          </div>
-          <div class="add-item">
-            <div class="label">
-              <va-icon name="assignment" size="small" class="mr-1"></va-icon> Chỉ định
-            </div>
-            <va-textarea
-              v-model="medicineData.indications"
-              :rules="[(v) => !!v || 'Chỉ định là bắt buộc']"
-              placeholder="Nhập chỉ định"
-            />
-          </div>
-
-          <!-- Safety Information -->
-          <div class="section-title mt-4">Thông tin an toàn</div>
+          <div class="section-title mt-2">Chi tiết sử dụng</div>
           <div class="add-grid">
             <div class="add-item">
               <div class="label">
-                <va-icon name="block" size="small" class="mr-1"></va-icon> Chống chỉ định
+                <va-icon name="category" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Dạng bào chế</span>
+              </div>
+              <va-input
+                v-model="medicineData.formulation"
+                placeholder="Nhập dạng"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="input-field"
+                dense
+              />
+            </div>
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="group_work" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Nhóm điều trị</span>
+              </div>
+              <va-input
+                v-model="medicineData.therapeuticGroup"
+                placeholder="Nhập nhóm"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="input-field"
+                dense
+              />
+            </div>
+          </div>
+          <div class="add-grid">
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="description" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Mô tả</span>
+              </div>
+              <va-textarea
+                v-model="medicineData.description"
+                placeholder="Nhập mô tả"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                required-mark
+                class="textarea-field"
+                dense
+              />
+            </div>
+          </div>
+          <div class="add-grid">
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="healing" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Liều lượng và cách dùng</span>
+              </div>
+              <va-textarea
+                v-model="medicineData.dosage"
+                placeholder="Nhập liều lượng"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
+              />
+            </div>
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="assignment" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Chỉ định</span>
+              </div>
+              <va-textarea
+                v-model="medicineData.indications"
+                placeholder="Nhập chỉ định"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
+              />
+            </div>
+          </div>
+          <div class="section-title mt-2">Thông tin an toàn</div>
+          <div class="add-grid">
+            <div class="add-item">
+              <div class="label">
+                <va-icon name="block" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Chống chỉ định</span>
               </div>
               <va-textarea
                 v-model="medicineData.contraindications"
                 placeholder="Nhập chống chỉ định"
-                :rules="[(v) => !!v || 'Chống chí định là bắt buộc']"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
               />
             </div>
             <div class="add-item">
               <div class="label">
-                <va-icon name="warning" size="small" class="mr-1"></va-icon> Thận trọng
+                <va-icon name="warning" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Thận trọng</span>
               </div>
               <va-textarea
                 v-model="medicineData.cautions"
                 placeholder="Nhập thận trọng"
-                :rules="[(v) => !!v || 'Nhập thận thọng là bắt buộc']"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
               />
             </div>
           </div>
-          <div class="add-item mt-3">
-            <div class="label">
-              <va-icon name="sick" size="small" class="mr-1"></va-icon> Tác dụng phụ
-            </div>
-            <va-textarea
-              v-model="medicineData.sideEffects"
-              placeholder="Nhập tác dụng phụ"
-              :rules="[(v) => !!v || 'Nhập tác dụng phụ là bắt buộc']"
-            />
-          </div>
-          <!-- Additional Information -->
-          <div class="section-title mt-4">Thông tin bổ sung</div>
           <div class="add-grid">
             <div class="add-item full-width">
               <div class="label">
-                <va-icon name="note" size="small" class="mr-1"></va-icon> Ghi chú
-              </div>
-              <va-textarea v-model="medicineData.notes" placeholder="Nhập ghi chú" />
-            </div>
-            <div class="add-item full-width">
-              <div class="label">
-                <va-icon name="menu_book" size="small" class="mr-1"></va-icon> Tài liệu tham khảo
+                <va-icon name="sick" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Tác dụng phụ</span>
               </div>
               <va-textarea
-                v-model="medicineData.referenceDocuments"
-                placeholder="Nhập tài liệu tham khảo"
-                :rules="[(v) => !!v || 'Nhập tài liệu tham khảo là bắt buộc']"
+                v-model="medicineData.sideEffects"
+                placeholder="Nhập tác dụng phụ"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
               />
             </div>
           </div>
-
+          <div class="section-title mt-2">Thông tin bổ sung</div>
+          <div class="add-grid">
+            <div class="add-item full-width">
+              <div class="label">
+                <va-icon name="note" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Ghi chú</span>
+              </div>
+              <va-textarea
+                v-model="medicineData.notes"
+                placeholder="Nhập ghi chú"
+                class="textarea-field"
+                dense
+              />
+            </div>
+            <div class="add-item full-width">
+              <div class="label">
+                <va-icon name="menu_book" size="small" class="mr-1"></va-icon>
+                <span class="label-text">Tài liệu tham khảo</span>
+              </div>
+              <va-textarea
+                v-model="medicineData.referenceDocuments"
+                placeholder="Nhập tài liệu"
+                :rules="[(v) => !!v || 'Bắt buộc']"
+                class="textarea-field"
+                dense
+              />
+            </div>
+          </div>
           <VaCardActions class="actions">
-            <VaButton @click="$emit('close-modal')" color="secondary">Hủy</VaButton>
-            <VaButton @click="onSubmit" color="primary">Lưu dữ liệu thuốc</VaButton>
+            <VaButton
+              @click="$emit('close-modal')"
+              preset="primary"
+              color="secondary"
+              class="action-button"
+              >Hủy</VaButton
+            >
+            <VaButton
+              @click="onSubmit"
+              preset="primary"
+              color="primary"
+              class="action-button action-button-primary"
+              >Lưu</VaButton
+            >
           </VaCardActions>
         </va-form>
       </va-card-content>
@@ -160,7 +209,28 @@
 
 <script setup lang="ts">
 import type { Medicine } from '@/interfaces/medicine.interface'
-import {  ref } from 'vue'
+import { ref } from 'vue'
+
+// Định nghĩa interface với contraindications là chuỗi
+interface Medicine {
+  id?: string
+  name: string
+  price: number
+  formulation: string
+  therapeuticGroup: string
+  description: string
+  dosage: string
+  indications: string
+  contraindications: string
+  cautions: string
+  sideEffects: string
+  notes: string
+  referenceDocuments: string
+  createdAt?: string
+  updatedAt?: string
+  createdBy?: string
+  updatedBy?: string
+}
 
 const props = defineProps<{
   medicineData: Medicine | null
@@ -171,7 +241,7 @@ const formRef = ref<{ validate: () => Promise<boolean> } | null>(null)
 const emit = defineEmits(['edit-medicine', 'close-modal'])
 
 const onSubmit = async () => {
-  if (!formRef.value) return
+  if (!formRef.value || !medicineData) return
   const isValid = await formRef.value.validate()
   if (isValid) emit('edit-medicine', medicineData)
 }
@@ -179,28 +249,54 @@ const onSubmit = async () => {
 
 <style scoped lang="scss">
 .add-medicine {
-  padding: 1.5rem;
+  padding: 1rem;
+
+  .medicine-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    min-width: 600px;
+    max-width: 900px;
+    margin: 0 auto;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
 
   .header {
     display: flex;
     align-items: center;
-    padding-bottom: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--va-background-border);
+
+    .title-text {
+      font-weight: 600;
+      color: var(--va-primary);
+      margin: 0;
+      font-size: 1.1rem;
+    }
   }
 
   .section-title {
-    font-size: 1.25rem;
     font-weight: 600;
     color: var(--va-primary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--va-background-secondary);
+    border-radius: 4px;
   }
 
   .add-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
+    padding: 0.75rem;
 
-    &.mt-3 {
-      margin-top: 1.5rem;
+    &.mt-2 {
+      margin-top: 1rem;
     }
   }
 
@@ -208,14 +304,13 @@ const onSubmit = async () => {
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border-radius: 8px;
-    background: var(--va-background-element);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    border-radius: 6px;
+    background: var(--va-background-secondary);
+    border: 1px solid var(--va-background-border);
+    transition: background-color 0.2s ease;
+
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--va-box-shadow);
+      background: var(--va-background-element);
     }
 
     &.full-width {
@@ -225,21 +320,81 @@ const onSubmit = async () => {
     .label {
       display: flex;
       align-items: center;
-      font-weight: 600;
+      font-weight: 500;
       color: var(--va-primary);
       margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .input-field,
+    .textarea-field {
+      border-radius: 4px;
+      border: 1px solid var(--va-background-border);
+      transition: border-color 0.2s ease;
+
+      &:focus-within {
+        border-color: var(--va-primary);
+      }
+    }
+
+    .textarea-field {
+      min-height: 80px;
     }
   }
 
   .actions {
     display: flex;
-    justify-content: end !important;
-    text-align: right;
-    padding: 1rem 0;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    border-top: 1px solid var(--va-background-border);
+
+    .action-button {
+      font-weight: 500;
+      border-radius: 4px;
+      font-size: 0.9rem;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &.action-button-primary {
+        margin-left: 0.5rem;
+      }
+    }
   }
 
-  .mt-4 {
-    margin-top: 1.5rem;
+  @media (max-width: 768px) {
+    .add-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .add-item {
+      padding: 0.75rem;
+    }
+
+    .actions {
+      flex-direction: column;
+
+      .action-button {
+        width: 100%;
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &.action-button-primary {
+          margin-left: 0;
+        }
+      }
+    }
+
+    .medicine-card {
+      min-width: 100%;
+      max-width: 100%;
+      margin: 0;
+    }
   }
 }
 </style>
+```

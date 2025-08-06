@@ -9,7 +9,7 @@ import type {
 } from '@/interfaces/response.interface'
 import jwtDecode from 'jwt-decode'
 import type { DecodedToken } from '@/interfaces/auth.interfaces'
-type Role = 'ADMIN' | 'STAFF' | 'PATIENT'
+type Role = 'ADMIN' | 'SUPPORTER' | 'PATIENT' | 'DOCTOR' | 'PHARMACIST' | ''
 
 export const useUserStore = defineStore('user', {
   persist: true,

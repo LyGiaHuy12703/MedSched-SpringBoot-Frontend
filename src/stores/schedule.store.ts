@@ -1,4 +1,8 @@
-import type { DoctorShift, DoctorShiftCreateRequest } from '@/interfaces/doctorShift.interfaces'
+import type {
+  DoctorShift,
+  DoctorShiftCreateRequest,
+  StaffDoctorShift,
+} from '@/interfaces/doctorShift.interfaces'
 import type {
   APIResponse,
   ClientResponse,
@@ -15,6 +19,7 @@ export const useScheduleStore = defineStore('useScheduleStore', {
     meta: null as Meta | null,
     loading: false,
     error: null as StandardizedError | null,
+    assignments: [] as StaffDoctorShift[],
   }),
   getters: {},
   actions: {
@@ -65,7 +70,6 @@ export const useScheduleStore = defineStore('useScheduleStore', {
           if (res?.data?.data) {
             this.schedules.push(res.data.data)
           }
-          console.log({ res })
           return res
         } else {
           this.error = res?.error?.details?.error
@@ -94,7 +98,6 @@ export const useScheduleStore = defineStore('useScheduleStore', {
       } catch (error) {
         throw new Error(this.error)
       } finally {
-        console.log('staff', this.staff)
         this.loading = false
       }
     },
@@ -158,6 +161,76 @@ export const useScheduleStore = defineStore('useScheduleStore', {
         throw new Error(this.error)
       } finally {
         this.loading = false
+      }
+    },
+    // --- CÁC ACTIONS MỚI CHO ASSIGNMENT ---
+
+    /**
+     * Lấy danh sách các phân công (StaffDoctorShift) đã được "làm phẳng" từ API.
+     * Hỗ trợ phân trang và lọc theo pivotStatus.
+     */
+    async fetchAssignments(payload: {
+      page: number
+      size: number
+      pivotStatus?: string
+      staffId?: string
+    }): Promise<ClientResponse<APIResponse<StaffDoctorShift[]>>> {
+      this.loading = true
+      this.error = null
+      try {
+        let res
+        if (payload.staffId) {
+          // Gọi hàm mới cho trang đặt lịch
+          res = await scheduleService.fetchAssignmentsByStaffId(
+            payload.staffId,
+            payload.page,
+            payload.size,
+          )
+        } else {
+          // Gọi hàm cũ cho trang của nhân viên
+          res = await scheduleService.fetchAssignments(
+            payload.page,
+            payload.size,
+            payload.pivotStatus,
+          )
+        }
+
+        if (res.success) {
+          this.assignments = res.data.result
+          this.meta = res.data.meta
+        }
+      } catch (e) {
+        throw e
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
+     * Cập nhật pivot_status của một phân công cụ thể.
+     * @param assignmentId - ID của bản ghi staff_doctor_shift
+     * @param newStatus - Trạng thái mới ('APPROVED' hoặc 'CANCELED')
+     */
+    async updateAssignmentStatus(
+      assignmentId: string,
+      newStatus: 'APPROVED' | 'CANCELED',
+    ): Promise<ClientResponse<APIResponse<StaffDoctorShift>>> {
+      // Không set loading = true để tránh làm giật toàn bộ bảng,
+      // component có thể tự quản lý loading cho từng nút
+      this.error = null
+      try {
+        const res = await scheduleService.updateAssignmentStatus(assignmentId, newStatus)
+        if (res.success) {
+          // Cập nhật lại bản ghi trong state hoặc đơn giản là fetch lại
+          // Ở đây, ta chọn cách đơn giản và an toàn là không cần cập nhật state thủ công
+          // Component sẽ gọi lại fetchAssignments để lấy dữ liệu mới nhất.
+          return res
+        } else {
+          this.error = res?.error?.details?.error
+          throw new Error(res?.error?.details?.error as string)
+        }
+      } catch (e) {
+        throw e
       }
     },
   },

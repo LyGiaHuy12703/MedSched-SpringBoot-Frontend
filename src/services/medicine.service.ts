@@ -26,5 +26,20 @@ const medicineService = {
   async deleteMedicine(id: string): Promise<ClientResponse<APIResponse<string>>> {
     return await apiClient.delete(`/medications/${id}`)
   },
+  async fetchCautions(): Promise<ClientResponse<APIResponse<string[]>>> {
+    return await apiClient.get('/medications/cautions')
+  },
+  async fetchIndications(): Promise<ClientResponse<APIResponse<string[]>>> {
+    return await apiClient.get('/medications/indications')
+  },
+  async fetchContraindications(): Promise<ClientResponse<APIResponse<string[]>>> {
+    return await apiClient.get('/medications/contraindications')
+  },
+  async fetchDosage(): Promise<ClientResponse<APIResponse<string[]>>> {
+    return await apiClient.get('/medications/dosage')
+  },
+  async fetchSideEffect(): Promise<ClientResponse<APIResponse<string[]>>> {
+    return await apiClient.get('/medications/sideEffect')
+  },
 }
 export default medicineService

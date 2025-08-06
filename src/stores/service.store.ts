@@ -23,7 +23,6 @@ export const useServiceStore = defineStore('useServiceStore', {
 
       try {
         const response = await serviceService.exportServices(); // Gọi qua serviceService
-        console.log('Response data:', response);
 
         if (!response.success || !(response.data instanceof Blob)) {
           throw new Error(response.message || 'Dữ liệu trả về không hợp lệ.');
